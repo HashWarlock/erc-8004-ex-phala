@@ -1,0 +1,6 @@
+# ERC-8004 Example Dependencies
+crewai>=0.165.1
+web3>=6.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+pydantic>=2.0.0 

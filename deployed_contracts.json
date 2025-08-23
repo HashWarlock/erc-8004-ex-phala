@@ -1,0 +1,16 @@
+{
+  "contracts": {
+    "IdentityRegistry": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+    "ReputationRegistry": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+    "ValidationRegistry": "0x9A676e781A523b5d0C0e43731313A708CB607508"
+  },
+  "transactions": {
+    "identity_registry": "70a86a538d14d011b75569c201cdde143da53a72fa5b24233364a0375fa5c41c",
+    "reputation_registry": "2c11f6c011cac42827362309e8bd690ae162aca1f2d297947bfffbd73d4106e4",
+    "validation_registry": "219278dba55ee63c984a00043737d169d3f39a730f0a9389f0e225ff574b8936"
+  },
+  "network": {
+    "chain_id": 31337,
+    "rpc_url": "http://127.0.0.1:8545"
+  }
+}

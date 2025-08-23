@@ -1,6 +1,30 @@
-# ERC-8004 Example Dependencies
-crewai>=0.165.1
+# ERC-8004 Phala Cloud Example Dependencies
+
+# Core Web3 and Blockchain
 web3>=6.0.0
-python-dotenv>=1.0.0
+eth-account>=0.10.0
+eth-utils>=2.3.0
+py-solc-x>=2.0.0
+
+# AI and Agent Orchestration
+crewai>=0.165.1
+langchain>=0.1.0
+pydantic>=2.0.0
+
+# Phala Cloud TEE SDK
+dstack-sdk>=0.1.0
+
+# API and Web Framework
+fastapi>=0.104.0
+uvicorn>=0.24.0
+httpx>=0.25.0
 requests>=2.31.0
-pydantic>=2.0.0 
+
+# Utilities
+python-dotenv>=1.0.0
+click>=8.1.0
+rich>=13.0.0
+
+# Development Tools (optional)
+pytest>=7.4.0
+black>=23.0.0 

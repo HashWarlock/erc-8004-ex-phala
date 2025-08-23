@@ -1,8 +1,8 @@
 """
-Base Agent for ERC-8004 Registry Interactions
+TEE-Enabled Base Agent for ERC-8004 Registry Interactions
 
-This module provides the foundational class for agents that interact with
-the ERC-8004 registry contracts.
+This module provides a TEE-enabled version of the base agent that derives
+its private key using the TEE's deterministic key derivation function.
 """
 
 import json
@@ -10,23 +10,42 @@ import os
 from typing import Dict, Optional, Any
 from web3 import Web3
 from web3.contract import Contract
+from dstack_sdk import DstackClient
+from eth_account import Account
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class ERC8004BaseAgent:
-    """Base class for agents interacting with ERC-8004 registries"""
+class ERC8004TEEAgent:
+    """TEE-enabled agent that derives keys using TEE's secure key derivation"""
     
-    def __init__(self, agent_domain: str, private_key: str):
+    def __init__(self, agent_domain: str, salt: str, tee_endpoint: Optional[str] = None):
         """
-        Initialize the base agent
+        Initialize the TEE-enabled agent
         
         Args:
             agent_domain: The domain where this agent's AgentCard is hosted
-            private_key: Private key for signing transactions
+            salt: Secret salt for deterministic key derivation (unique per agent)
+            tee_endpoint: TEE endpoint (defaults to DSTACK_SIMULATOR_ENDPOINT or production socket)
         """
         self.agent_domain = agent_domain
-        self.private_key = private_key
+        self.salt = salt
+        
+        # Initialize TEE client
+        if tee_endpoint:
+            self.tee_endpoint = tee_endpoint
+        else:
+            # Check for simulator endpoint (development)
+            self.tee_endpoint = os.getenv('DSTACK_SIMULATOR_ENDPOINT')
+            if not self.tee_endpoint:
+                # Default to production socket
+                self.tee_endpoint = '/var/run/dstack.sock'
+        
+        print(f"🔐 Initializing TEE client at: {self.tee_endpoint}")
+        self.tee_client = DstackClient(endpoint=self.tee_endpoint)
+        
+        # Derive private key using TEE's deterministic key derivation
+        self._derive_key()
         
         # Initialize Web3 connection
         rpc_url = os.getenv('RPC_URL', 'http://127.0.0.1:8545')
@@ -35,9 +54,11 @@ class ERC8004BaseAgent:
         if not self.w3.is_connected():
             raise ConnectionError(f"Failed to connect to {rpc_url}")
         
-        # Load account from private key
-        self.account = self.w3.eth.account.from_key(private_key)
+        # Load account from derived private key
+        self.account = Account.from_key(self.private_key)
         self.address = self.account.address
+        
+        print(f"📍 Agent address: {self.address}")
         
         # Load contract addresses from deployment
         self._load_contract_addresses()
@@ -48,6 +69,86 @@ class ERC8004BaseAgent:
         # Agent registry info
         self.agent_id: Optional[int] = None
         self._check_registration()
+    
+    def _derive_key(self):
+        """Derive private key using TEE's secure key derivation"""
+        # Create a unique identifier by combining agent domain and salt
+        # This ensures each agent gets a unique, deterministic key
+        path = f"erc8004-agent/{self.agent_domain}"
+        purpose = self.salt  # Use salt as purpose for additional entropy
+        
+        print(f"🔑 Deriving key for agent with path: {path[:30]}...")
+        
+        try:
+            # Use TEE's get_key function for deterministic key derivation
+            # This returns a GetKeyResponse with secp256k1 private key
+            key_result = self.tee_client.get_key(path, purpose)
+            
+            # Get the key from the response
+            # The key is a hex string of 32-byte secp256k1 private key
+            if hasattr(key_result, 'key'):
+                key_hex = key_result.key
+            else:
+                # Fallback for dict response
+                key_hex = key_result['key']
+            
+            # decode_key() returns the raw bytes if needed
+            if hasattr(key_result, 'decode_key'):
+                key_bytes = key_result.decode_key()
+                self.private_key = '0x' + key_bytes.hex()
+            else:
+                # Already hex string, ensure 0x prefix
+                self.private_key = key_hex if key_hex.startswith('0x') else '0x' + key_hex
+            
+            print(f"✅ Key derived successfully")
+            
+        except Exception as e:
+            print(f"❌ Failed to derive key from TEE: {e}")
+            # Fallback for testing: derive key from salt directly (NOT for production!)
+            if os.getenv('DEVELOPMENT_MODE') == 'true':
+                import hashlib
+                print("⚠️  DEVELOPMENT MODE: Using fallback key derivation")
+                fallback_seed = f"{path}:{purpose}"
+                key_bytes = hashlib.sha256(fallback_seed.encode()).digest()
+                self.private_key = '0x' + key_bytes.hex()
+            else:
+                raise
+    
+    def get_attestation(self) -> Dict[str, Any]:
+        """
+        Get TEE attestation quote for the agent's current state
+        
+        Returns:
+            Attestation data including quote and supporting information
+        """
+        # Create attestation data that includes agent identity
+        attestation_data = {
+            'agent_domain': self.agent_domain,
+            'agent_address': self.address,
+            'agent_id': self.agent_id
+        }
+        
+        # Convert to JSON and encode (max 64 bytes for report_data)
+        attestation_json = json.dumps(attestation_data)
+        # Truncate if needed to fit in 64 bytes
+        attestation_bytes = attestation_json.encode()[:64]
+        
+        try:
+            # get_quote returns GetQuoteResponse with quote and event_log
+            quote_result = self.tee_client.get_quote(attestation_bytes)
+            
+            return {
+                'quote': quote_result.quote if hasattr(quote_result, 'quote') else str(quote_result),
+                'event_log': quote_result.event_log if hasattr(quote_result, 'event_log') else None,
+                'attestation_data': attestation_data,
+                'tee_endpoint': self.tee_endpoint
+            }
+        except Exception as e:
+            print(f"⚠️  Failed to get attestation: {e}")
+            return {
+                'error': str(e),
+                'attestation_data': attestation_data
+            }
     
     def _load_contract_addresses(self):
         """Load contract addresses from deployed_contracts.json"""
@@ -319,4 +420,4 @@ class ERC8004BaseAgent:
             'agent_id': result[0],
             'agent_domain': result[1],
             'agent_address': result[2]
-        } 
+        }

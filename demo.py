@@ -28,6 +28,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
 from agents.server_agent import ServerAgent
 from agents.validator_agent import ValidatorAgent
 from agents.base_agent import ERC8004BaseAgent
+from agents.tee_base_agent import ERC8004TEEAgent
 
 # Load environment variables
 load_dotenv()
@@ -107,33 +108,66 @@ def initialize_agents():
     print("\n🤖 STEP 2: Initializing AI Agents")
     print("-" * 50)
     
-    # Use different private keys for different agents (in production, these would be separate entities)
-    server_key = os.getenv('PRIVATE_KEY')
-    # Generate a different key for validator (simplified for demo)
-    validator_key = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # Anvil account #1
-    client_key = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"    # Anvil account #2
+    # Check if we should use TEE-based authentication
+    use_tee = os.getenv('USE_TEE_AUTH', 'false').lower() == 'true'
+    
+    if use_tee:
+        print("🔐 Using TEE-based authentication")
+        # Use TEE-based key derivation with unique salts for each agent
+        server_salt = os.getenv('SERVER_AGENT_SALT', 'server-secret-salt-2024')
+        validator_salt = os.getenv('VALIDATOR_AGENT_SALT', 'validator-secret-salt-2024')
+        client_salt = os.getenv('CLIENT_AGENT_SALT', 'client-secret-salt-2024')
+    else:
+        print("🔑 Using traditional private key authentication")
+        # Use different private keys for different agents (in production, these would be separate entities)
+        server_key = os.getenv('PRIVATE_KEY')
+        # Generate a different key for validator (simplified for demo)
+        validator_key = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"  # Anvil account #1
+        client_key = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"    # Anvil account #2
     
     try:
-        # Initialize Server Agent (Alice)
-        print("🔧 Initializing Server Agent (Alice)...")
-        alice = ServerAgent(
-            agent_domain=os.getenv('AGENT_DOMAIN_ALICE', 'alice.example.com'),
-            private_key=server_key
-        )
-        
-        # Initialize Validator Agent (Bob)
-        print("🔧 Initializing Validator Agent (Bob)...")
-        bob = ValidatorAgent(
-            agent_domain=os.getenv('AGENT_DOMAIN_BOB', 'bob.example.com'),
-            private_key=validator_key
-        )
-        
-        # Initialize Client Agent (Charlie) - for feedback
-        print("🔧 Initializing Client Agent (Charlie)...")
-        charlie = ERC8004BaseAgent(
-            agent_domain="charlie.example.com",
-            private_key=client_key
-        )
+        if use_tee:
+            # Initialize TEE-enabled agents
+            print("🔧 Initializing TEE Server Agent (Alice)...")
+            # Create TEE-enabled server agent wrapper
+            from agents.tee_server_agent import TEEServerAgent
+            alice = TEEServerAgent(
+                agent_domain=os.getenv('AGENT_DOMAIN_ALICE', 'alice.example.com'),
+                salt=server_salt
+            )
+            
+            print("🔧 Initializing TEE Validator Agent (Bob)...")
+            # Create TEE-enabled validator agent wrapper
+            from agents.tee_validator_agent import TEEValidatorAgent
+            bob = TEEValidatorAgent(
+                agent_domain=os.getenv('AGENT_DOMAIN_BOB', 'bob.example.com'),
+                salt=validator_salt
+            )
+            
+            print("🔧 Initializing TEE Client Agent (Charlie)...")
+            charlie = ERC8004TEEAgent(
+                agent_domain="charlie.example.com",
+                salt=client_salt
+            )
+        else:
+            # Initialize traditional agents
+            print("🔧 Initializing Server Agent (Alice)...")
+            alice = ServerAgent(
+                agent_domain=os.getenv('AGENT_DOMAIN_ALICE', 'alice.example.com'),
+                private_key=server_key
+            )
+            
+            print("🔧 Initializing Validator Agent (Bob)...")
+            bob = ValidatorAgent(
+                agent_domain=os.getenv('AGENT_DOMAIN_BOB', 'bob.example.com'),
+                private_key=validator_key
+            )
+            
+            print("🔧 Initializing Client Agent (Charlie)...")
+            charlie = ERC8004BaseAgent(
+                agent_domain="charlie.example.com",
+                private_key=client_key
+            )
         
         return alice, bob, charlie
         

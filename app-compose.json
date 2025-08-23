@@ -1,0 +1,19 @@
+{
+  "manifest_version": 1,
+  "name": "erc8004-trustless-agents",
+  "runner": "docker-compose",
+  "docker_compose_file": "version: '3.8'\\n\\nservices:\\n  app:\\n    image: erc-8004-ex-phala:erc8004-phala\\n    container_name: erc8004-trustless-agent\\n    environment:\\n      - AGENT_TYPE=${AGENT_TYPE:-server}\\n      - CONTAINER_MODE=true\\n      - NODE_ENV=production\\n      - TEE_MODE=production\\n      - RPC_URL=${RPC_URL}\\n      - PRIVATE_KEY=${PRIVATE_KEY}\\n      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS}\\n      - HEALTHCHECK_INTERVAL=30000\\n    volumes:\\n      - /var/run/dstack.sock:/var/run/dstack.sock\\n    ports:\\n      - \"8080:8080\"\\n    restart: unless-stopped\\n    healthcheck:\\n      test: [\"CMD\", \"python\", \"-c\", \"import sys; sys.exit(0)\"]\\n      interval: 30s\\n      timeout: 10s\\n      retries: 3",
+  "public_tcbinfo": true,
+  "kms_enabled": true,
+  "gateway_enabled": false,
+  "allowed_envs": [
+    "AGENT_TYPE",
+    "RPC_URL",
+    "PRIVATE_KEY",
+    "CONTRACT_ADDRESS",
+    "NODE_ENV",
+    "TEE_MODE",
+    "CONTAINER_MODE",
+    "HEALTHCHECK_INTERVAL"
+  ]
+}

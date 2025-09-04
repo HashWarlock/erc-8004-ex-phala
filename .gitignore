@@ -188,15 +188,34 @@ config.local.*
 
 # Deployment artifacts
 deployment.json
+deployed_contracts.json
 deployments/
 
-# Generated data
+# Test data files
 data/*.json
 validations/*.json
-!data/.gitkeep
-!validations/.gitkeep 
 
-data
+# API logs
+api.log
+
+# Docker env files
+.env.docker
+app-compose.json
+
+# Project specific
+.claude/
+.taskmaster/
+.cursor/
+.dstack/
+.flox/
+
+# Development tools config
+.mcp.json
+
+# Temporary test files
+tests/demo.py
+run_tests.py
+run_api.py
 
 logs
 dev-debug.log

@@ -14,17 +14,21 @@ from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 from .base_agent import ERC8004BaseAgent
 
+
 class MarketAnalysisInput(BaseModel):
     """Input model for market analysis"""
+
     symbol: str = Field(description="Trading symbol to analyze (e.g., 'BTC', 'ETH')")
     timeframe: str = Field(description="Analysis timeframe (e.g., '1d', '1w', '1m')")
-    
+
+
 class MarketAnalysisTool(BaseTool):
     """Tool for performing market analysis"""
+
     name: str = "market_analysis"
     description: str = "Analyzes market data for a given symbol and timeframe"
     args_schema: type[BaseModel] = MarketAnalysisInput
-    
+
     def _run(self, symbol: str, timeframe: str) -> str:
         """
         Perform market analysis (simplified for demo)
@@ -38,36 +42,37 @@ class MarketAnalysisTool(BaseTool):
             "confidence": 85,
             "key_levels": {
                 "support": 45000 if symbol == "BTC" else 2800,
-                "resistance": 52000 if symbol == "BTC" else 3200
+                "resistance": 52000 if symbol == "BTC" else 3200,
             },
             "recommendation": "BUY" if hash(symbol) % 2 == 0 else "HOLD",
-            "risk_level": "medium"
+            "risk_level": "medium",
         }
-        
+
         return json.dumps(analysis, indent=2)
+
 
 class ServerAgent(ERC8004BaseAgent):
     """
     Server Agent that provides market analysis services
     """
-    
+
     def __init__(self, agent_domain: str, private_key: str):
         """Initialize the Server Agent"""
         super().__init__(agent_domain, private_key)
-        
+
         # Initialize CrewAI components
         self._setup_crew()
-        
+
         print(f"🤖 Server Agent initialized")
         print(f"   Domain: {self.agent_domain}")
         print(f"   Address: {self.address}")
-    
+
     def _setup_crew(self):
         """Setup the CrewAI crew for market analysis"""
-        
+
         # Create the market analysis tool
         self.market_tool = MarketAnalysisTool()
-        
+
         # Define the analyst agent
         self.analyst = Agent(
             role="Senior Market Analyst",
@@ -77,9 +82,9 @@ class ServerAgent(ERC8004BaseAgent):
             and providing actionable trading recommendations based on technical analysis.""",
             tools=[self.market_tool],
             verbose=True,
-            allow_delegation=False
+            allow_delegation=False,
         )
-        
+
         # Define the reviewer agent
         self.reviewer = Agent(
             role="Risk Assessment Specialist",
@@ -88,22 +93,24 @@ class ServerAgent(ERC8004BaseAgent):
             market analysis reports. Your job is to ensure the analysis is sound, 
             well-reasoned, and includes appropriate risk warnings.""",
             verbose=True,
-            allow_delegation=False
+            allow_delegation=False,
         )
-    
-    def perform_market_analysis(self, symbol: str, timeframe: str = "1d") -> Dict[str, Any]:
+
+    def perform_market_analysis(
+        self, symbol: str, timeframe: str = "1d"
+    ) -> Dict[str, Any]:
         """
         Perform comprehensive market analysis using CrewAI
-        
+
         Args:
             symbol: Trading symbol to analyze
             timeframe: Analysis timeframe
-            
+
         Returns:
             Analysis results with metadata
         """
         print(f"📊 Starting market analysis for {symbol} ({timeframe})")
-        
+
         # Create analysis task
         analysis_task = Task(
             description=f"""
@@ -119,9 +126,9 @@ class ServerAgent(ERC8004BaseAgent):
             Present your findings in a clear, structured format.
             """,
             agent=self.analyst,
-            expected_output="A detailed market analysis report with trend assessment, key levels, recommendation, and risk evaluation"
+            expected_output="A detailed market analysis report with trend assessment, key levels, recommendation, and risk evaluation",
         )
-        
+
         # Create review task
         review_task = Task(
             description=f"""
@@ -135,16 +142,16 @@ class ServerAgent(ERC8004BaseAgent):
             Ensure the analysis meets professional standards and includes appropriate risk warnings.
             """,
             agent=self.reviewer,
-            expected_output="A reviewed and validated market analysis with risk assessment and final recommendations"
+            expected_output="A reviewed and validated market analysis with risk assessment and final recommendations",
         )
-        
+
         # Create and run the crew
         crew = Crew(
             agents=[self.analyst, self.reviewer],
             tasks=[analysis_task, review_task],
-            verbose=True
+            verbose=True,
         )
-        
+
         # Execute the analysis
         try:
             result = crew.kickoff()
@@ -152,53 +159,55 @@ class ServerAgent(ERC8004BaseAgent):
             # Fallback to mock analysis if LLM fails
             print(f"⚠️  LLM analysis failed ({str(e)[:50]}...), using fallback analysis")
             result = self._create_fallback_analysis(symbol, timeframe)
-        
+
         # Prepare the final analysis package
         analysis_package = {
             "symbol": symbol,
             "timeframe": timeframe,
-            "timestamp": self.w3.eth.get_block('latest')['timestamp'],
+            "timestamp": self.w3.eth.get_block("latest")["timestamp"],
             "agent_id": self.agent_id,
             "agent_domain": self.agent_domain,
             "analysis": str(result),
             "metadata": {
                 "crew_agents": len(crew.agents),
                 "tasks_completed": len(crew.tasks),
-                "analysis_method": "CrewAI Multi-Agent Analysis"
-            }
+                "analysis_method": "CrewAI Multi-Agent Analysis",
+            },
         }
-        
+
         print(f"✅ Market analysis completed for {symbol}")
         return analysis_package
-    
-    def submit_work_for_validation(self, analysis_package: Dict[str, Any], validator_agent_id: int) -> str:
+
+    def submit_work_for_validation(
+        self, analysis_package: Dict[str, Any], validator_agent_id: int
+    ) -> str:
         """
         Submit analysis work for validation through ERC-8004
-        
+
         Args:
             analysis_package: The completed analysis
             validator_agent_id: ID of the validator agent
-            
+
         Returns:
             Transaction hash of the validation request
         """
         # Create a hash of the analysis package
         analysis_json = json.dumps(analysis_package, sort_keys=True)
         data_hash = hashlib.sha256(analysis_json.encode()).digest()
-        
+
         print(f"📤 Submitting work for validation")
         print(f"   Data hash: {data_hash.hex()}")
         print(f"   Validator: Agent {validator_agent_id}")
-        
+
         # Store the analysis package for the validator to retrieve
         # In a real implementation, this would be stored on IPFS or similar
         self._store_analysis_package(data_hash.hex(), analysis_package)
-        
+
         # Request validation through ERC-8004
         tx_hash = self.request_validation(validator_agent_id, data_hash)
-        
+
         return tx_hash
-    
+
     def _create_fallback_analysis(self, symbol: str, timeframe: str) -> str:
         """Create a fallback analysis when LLM is not available"""
         analysis = {
@@ -210,26 +219,26 @@ class ServerAgent(ERC8004BaseAgent):
             "resistance_level": 52000 if symbol == "BTC" else 3200,
             "recommendation": "BUY" if hash(symbol) % 2 == 0 else "HOLD",
             "risk_level": "medium",
-            "analysis_note": "This is a fallback analysis generated without LLM. For full AI-powered analysis, please configure OPENAI_API_KEY."
+            "analysis_note": "This is a fallback analysis generated without LLM. For full AI-powered analysis, please configure OPENAI_API_KEY.",
         }
-        
+
         return f"""
 # Market Analysis Report for {symbol}
 
 ## Executive Summary
-Based on technical analysis of {symbol} over the {timeframe} timeframe, the market shows a **{analysis['trend']}** trend with **{analysis['risk_level']}** risk levels.
+Based on technical analysis of {symbol} over the {timeframe} timeframe, the market shows a **{analysis["trend"]}** trend with **{analysis["risk_level"]}** risk levels.
 
 ## Key Findings
-- **Current Trend**: {analysis['trend'].title()}
-- **Support Level**: ${analysis['support_level']:,}
-- **Resistance Level**: ${analysis['resistance_level']:,}
-- **Confidence Level**: {analysis['confidence']}%
+- **Current Trend**: {analysis["trend"].title()}
+- **Support Level**: ${analysis["support_level"]:,}
+- **Resistance Level**: ${analysis["resistance_level"]:,}
+- **Confidence Level**: {analysis["confidence"]}%
 
 ## Recommendation
-**{analysis['recommendation']}** - {analysis['analysis_note']}
+**{analysis["recommendation"]}** - {analysis["analysis_note"]}
 
 ## Risk Assessment
-The current market conditions present {analysis['risk_level']} risk levels. Traders should exercise appropriate caution and position sizing.
+The current market conditions present {analysis["risk_level"]} risk levels. Traders should exercise appropriate caution and position sizing.
 
 *Note: This analysis was generated using fallback logic. For AI-powered analysis with CrewAI, please configure your OpenAI API key.*
 """
@@ -238,17 +247,68 @@ The current market conditions present {analysis['risk_level']} risk levels. Trad
         """Store analysis package for validator retrieval (simplified for demo)"""
         # In production, this would use IPFS or decentralized storage
         import os
+
         os.makedirs("data", exist_ok=True)
-        
-        with open(f"data/{data_hash}.json", 'w') as f:
+
+        with open(f"data/{data_hash}.json", "w") as f:
             json.dump(analysis_package, f, indent=2)
-        
+
         print(f"💾 Analysis package stored: data/{data_hash}.json")
-    
+
+    def authorize_client_feedback(self, client_agent_id: int) -> str:
+        """
+        Authorize a client agent to provide feedback to this server
+
+        Args:
+            client_agent_id: ID of the client agent to authorize
+
+        Returns:
+            Transaction hash
+        """
+        if not self.agent_id:
+            raise ValueError("Server agent must be registered first")
+
+        print(f"🔐 Server authorizing client {client_agent_id} to provide feedback")
+
+        # Call ReputationRegistry.acceptFeedback(clientId, serverId)
+        function = self.reputation_registry.functions.acceptFeedback(
+            client_agent_id,  # Client ID to authorize
+            self.agent_id,  # Server ID (this agent)
+        )
+
+        # Build and send transaction
+        transaction = function.build_transaction(
+            {
+                "from": self.address,
+                "gas": 200000,  # Increased gas limit
+                "gasPrice": self.w3.eth.gas_price,
+                "nonce": self.w3.eth.get_transaction_count(self.address),
+            }
+        )
+
+        try:
+            signed_txn = self.w3.eth.account.sign_transaction(
+                transaction, private_key=self.private_key
+            )
+            tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
+
+            print(f"   Transaction hash: {tx_hash.hex()}")
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+            if receipt.status == 1:
+                print(f"✅ Client feedback authorization successful")
+                return tx_hash.hex()
+            else:
+                print(f"❌ Transaction failed with status: {receipt.status}")
+                raise Exception(f"Client feedback authorization transaction failed")
+        except Exception as e:
+            print(f"❌ Client feedback authorization error: {str(e)}")
+            raise Exception(f"Client feedback authorization failed: {str(e)}")
+
     def get_trust_models(self) -> list:
         """Return supported trust models for this agent"""
         return ["feedback", "inference-validation"]
-    
+
     def get_agent_card(self) -> Dict[str, Any]:
         """Generate AgentCard following A2A specification"""
         return {
@@ -264,19 +324,25 @@ The current market conditions present {analysis['risk_level']} risk levels. Trad
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "symbol": {"type": "string", "description": "Trading symbol"},
-                            "timeframe": {"type": "string", "description": "Analysis timeframe"}
+                            "symbol": {
+                                "type": "string",
+                                "description": "Trading symbol",
+                            },
+                            "timeframe": {
+                                "type": "string",
+                                "description": "Analysis timeframe",
+                            },
                         },
-                        "required": ["symbol"]
+                        "required": ["symbol"],
                     },
                     "outputSchema": {
                         "type": "object",
                         "properties": {
                             "analysis": {"type": "string"},
                             "recommendation": {"type": "string"},
-                            "confidence": {"type": "number"}
-                        }
-                    }
+                            "confidence": {"type": "number"},
+                        },
+                    },
                 }
             ],
             "trustModels": self.get_trust_models(),
@@ -284,7 +350,7 @@ The current market conditions present {analysis['risk_level']} risk levels. Trad
                 {
                     "agentId": self.agent_id,
                     "agentAddress": f"eip155:{self.w3.eth.chain_id}:{self.address}",
-                    "signature": "0x..."  # Would be actual signature in production
+                    "signature": "0x...",  # Would be actual signature in production
                 }
-            ]
-        } 
+            ],
+        }

@@ -249,7 +249,7 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 ## 🙏 Acknowledgments
 
 - [ERC-8004 Standard](https://eips.ethereum.org/EIPS/eip-8004) authors
-- [Phala Network](https://phala.network) for TEE infrastructure
+- [Phala Cloud](https://phala.com) for TEE infrastructure
 - [Foundry](https://book.getfoundry.sh/) for smart contract tools
 - [CrewAI](https://www.crewai.com/) for AI agent framework
 

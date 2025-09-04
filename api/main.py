@@ -13,6 +13,7 @@ from typing import Dict, Any
 import os
 import logging
 from datetime import datetime
+from web3 import Web3
 
 # Import models and WebSocket support
 from api.models import MarketAnalysisRequest, AnalysisResponse
@@ -86,6 +87,27 @@ async def lifespan(app: FastAPI):
                 agent_domain=os.getenv("CLIENT_AGENT_DOMAIN", "charlie.example.com"),
                 private_key=os.getenv("CLIENT_AGENT_PRIVATE_KEY"),
             )
+
+        # Fund agents if needed (especially important for TEE agents)
+        w3 = Web3(Web3.HTTPProvider(os.getenv("RPC_URL", "http://localhost:8545")))
+        if w3.is_connected():
+            for agent_type, agent in agents.items():
+                balance = w3.eth.get_balance(agent.address)
+                if balance < w3.to_wei(0.01, "ether"):
+                    logger.info(f"Funding {agent_type} agent at {agent.address}...")
+                    try:
+                        tx = {
+                            "from": w3.eth.accounts[0],  # Anvil's funded account
+                            "to": agent.address,
+                            "value": w3.to_wei(0.1, "ether"),
+                            "gas": 21000,
+                            "gasPrice": w3.eth.gas_price,
+                        }
+                        tx_hash = w3.eth.send_transaction(tx)
+                        w3.eth.wait_for_transaction_receipt(tx_hash)
+                        logger.info(f"✅ Funded {agent_type} agent with 0.1 ETH")
+                    except Exception as fund_error:
+                        logger.warning(f"Could not fund {agent_type} agent: {fund_error}")
 
         # Register agents if not already registered
         for agent_type, agent in agents.items():

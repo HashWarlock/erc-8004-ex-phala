@@ -14,16 +14,19 @@
 git clone <repository-url>
 cd erc-8004-ex-phala
 
+# Install Flox if not already installed
+curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
+
 # Activate Flox environment
 flox activate
 
-# Install dependencies
-make install
+# Copy environment configuration
+cp .env.example .env
 
 # Start development environment (run in separate terminals)
-make anvil        # Terminal 1: blockchain
-make tee-start    # Terminal 2: TEE simulator  
-make deploy       # Terminal 3: deploy contracts
+flox activate -- make anvil        # Terminal 1: blockchain
+flox activate -- make deploy       # Terminal 2: deploy contracts
+flox activate -- make test-e2e     # Terminal 3: run tests
 ```
 
 ## Detailed Setup
@@ -31,11 +34,8 @@ make deploy       # Terminal 3: deploy contracts
 ### 1. Install Flox
 
 ```bash
-# macOS
-brew install flox
-
-# Linux
-curl -L https://flox.dev/install | sh
+# Universal installation
+curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
 
 # Verify installation
 flox --version
@@ -68,7 +68,18 @@ Edit `.env` with your configuration:
 RPC_URL=http://127.0.0.1:8545
 CHAIN_ID=31337
 
-# Development accounts (DO NOT use in production)
+# TEE Authentication Mode (set to true for Phala Cloud TEE)
+USE_TEE_AUTH=true
+
+# TEE Agent Configuration (for deterministic key generation)
+SERVER_AGENT_DOMAIN=alice.example.com
+SERVER_AGENT_SALT=server-secret-salt-2024
+VALIDATOR_AGENT_DOMAIN=bob.example.com
+VALIDATOR_AGENT_SALT=validator-secret-salt-2024
+CLIENT_AGENT_DOMAIN=charlie.example.com
+CLIENT_AGENT_SALT=client-secret-salt-2024
+
+# Traditional Mode Keys (used when USE_TEE_AUTH=false)
 SERVER_AGENT_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 VALIDATOR_AGENT_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 CLIENT_AGENT_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
@@ -89,50 +100,67 @@ OPENAI_API_KEY=your-key-here
 
 ```bash
 # Start Anvil (local Ethereum)
-make anvil
+flox activate -- make anvil
 
 # In another terminal, verify connection
-cast block-number --rpc-url http://127.0.0.1:8545
+flox activate -- cast block-number --rpc-url http://127.0.0.1:8545
 ```
 
 ### 5. Deploy Smart Contracts
 
 ```bash
-# Deploy all contracts
-make deploy
+# Deploy all contracts (includes automatic TEE wallet funding)
+flox activate -- make deploy
 
 # Verify deployment
 cat deployed_contracts.json
+
+# If using TEE mode, verify wallets are funded
+flox activate -- make tee-fund
 ```
 
-### 6. Start TEE Simulator
+### 6. TEE Simulator (Optional)
+
+The TEE simulator is automatically started when needed. To manually control:
 
 ```bash
 # Start dstack simulator
-make tee-start
+flox activate -- make tee-start
 
 # Verify TEE is running
-make tee-status
+flox activate -- make tee-status
+
+# View TEE logs
+flox activate -- make tee-logs
+
+# Stop TEE simulator
+flox activate -- make tee-stop
 ```
 
 ### 7. Start API Server
 
 ```bash
-# Start the API
-make api-start
+# Start the API (includes automatic TEE wallet funding)
+flox activate -- python run_api.py
 
 # Or for development with auto-reload
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+flox activate -- uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Verify API health
+curl http://localhost:8000/health
 ```
 
 ### 8. Verify Setup
 
 ```bash
-# Check all services
-make status
+# Run end-to-end test
+flox activate -- make test-e2e
 
-# Run tests
-make test
+# Or run the complete demo
+flox activate -- ./run_demo.sh
+
+# Test with TEE mode explicitly
+USE_TEE_AUTH=true flox activate -- make test-e2e
 ```
 
 ## Development Workflow
@@ -193,14 +221,15 @@ erc-8004-ex-phala/
 
 ### Adding New Agents
 
-1. Create new agent class:
+1. Create new agent class (supports both TEE and traditional modes):
 ```python
 # agents/custom_agent.py
-from agents.base_agent import ERC8004BaseAgent
+from agents.tee_base_agent import ERC8004TEEAgent
 
-class CustomAgent(ERC8004BaseAgent):
-    def __init__(self, agent_domain: str, private_key: str):
-        super().__init__(agent_domain, private_key)
+class CustomAgent(ERC8004TEEAgent):
+    def __init__(self, agent_domain: str, salt: str = None, private_key: str = None):
+        """Initialize with TEE support (salt) or traditional mode (private_key)"""
+        super().__init__(agent_domain, salt, private_key)
     
     def custom_method(self):
         # Your implementation
@@ -252,13 +281,19 @@ async def custom_action():
 
 ```bash
 # Unit tests only
-pytest tests/unit/
+flox activate -- make test-unit
+
+# Integration tests (requires blockchain)
+flox activate -- make test-int
+
+# End-to-end tests
+flox activate -- make test-e2e
 
 # With coverage
-pytest --cov=agents --cov-report=html
+flox activate -- make test-cov
 
-# Specific test
-pytest tests/unit/test_base_agent.py::test_initialization
+# Specific test file
+flox activate -- python -m pytest tests/unit/test_base_agent.py -v
 ```
 
 ### Debugging
@@ -351,38 +386,38 @@ make reset
 
 ### Common Issues
 
-1. **Flox not found**
+1. **Anvil not running**
    ```bash
-   # Reload shell
-   source ~/.bashrc
-   # or
-   source ~/.zshrc
+   # Start Anvil in separate terminal
+   flox activate -- make anvil
    ```
 
-2. **Port already in use**
+2. **Contracts not deployed**
    ```bash
-   # Find process using port
-   lsof -i :8545
-   # Kill process
-   kill -9 <PID>
+   # Deploy contracts
+   flox activate -- make deploy
    ```
 
-3. **Contract deployment fails**
+3. **TEE wallets not funded**
    ```bash
-   # Ensure Anvil is running
-   make anvil
+   # Fund TEE wallets
+   flox activate -- make tee-fund
    
-   # Check account balance
-   cast balance 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+   # Or set USE_TEE_AUTH=false in .env to use traditional keys
    ```
 
 4. **Import errors**
    ```bash
-   # Ensure in Flox environment
-   flox activate
-   
-   # Reinstall dependencies
-   pip install -r requirements.txt
+   # Always use flox activate before running commands
+   flox activate -- python your_script.py
+   ```
+
+5. **Test failures**
+   ```bash
+   # Reset blockchain state
+   flox activate -- make reset
+   flox activate -- make anvil    # In separate terminal
+   flox activate -- make deploy
    ```
 
 ## Performance Tips

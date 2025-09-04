@@ -4,25 +4,56 @@
 - Development: `http://localhost:8000`
 - Production: Configured per deployment
 
+## Features
+- ERC-8004 compliant agent operations
+- Phala Cloud TEE integration for secure key management
+- Automatic wallet funding for TEE agents
+- Real-time WebSocket updates
+- Complete workflow automation
+
 ## Authentication
 Most endpoints require Bearer token authentication:
 ```http
 Authorization: Bearer <token>
 ```
 
+## TEE Mode
+When `USE_TEE_AUTH=true`, agents use deterministic key derivation via Phala's TEE simulator. The API automatically funds TEE wallets on startup.
+
 ## Endpoints
 
 ### Health & Status
 
 #### GET /health
-Health check endpoint
+Health check endpoint with agent registration status
 ```json
 {
   "status": "healthy",
+  "tee_mode": true,
   "agents": {
-    "server": {"agent_id": 1, "registered": true},
-    "validator": {"agent_id": 2, "registered": true},
-    "client": {"agent_id": 3, "registered": true}
+    "server": {
+      "agent_id": 1,
+      "registered": true,
+      "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
+      "domain": "alice.example.com"
+    },
+    "validator": {
+      "agent_id": 2,
+      "registered": true,
+      "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
+      "domain": "bob.example.com"
+    },
+    "client": {
+      "agent_id": 3,
+      "registered": true,
+      "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
+      "domain": "charlie.example.com"
+    }
+  },
+  "blockchain": {
+    "connected": true,
+    "chain_id": 31337,
+    "rpc_url": "http://localhost:8545"
   }
 }
 ```
@@ -30,16 +61,42 @@ Health check endpoint
 ### Agent Operations
 
 #### GET /agents
-Get all registered agents
+Get all registered agents with their TEE or traditional configuration
 ```json
 {
   "server": {
     "agent_id": 1,
-    "domain": "server.erc8004.local",
-    "address": "0x...",
-    "card": {...}
+    "domain": "alice.example.com",
+    "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
+    "tee_enabled": true,
+    "balance_eth": "0.1",
+    "card": {
+      "name": "Market Analysis Server",
+      "description": "AI-powered market analysis agent"
+    }
   },
-  ...
+  "validator": {
+    "agent_id": 2,
+    "domain": "bob.example.com",
+    "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
+    "tee_enabled": true,
+    "balance_eth": "0.1",
+    "card": {
+      "name": "Work Validator",
+      "description": "Validates analysis quality"
+    }
+  },
+  "client": {
+    "agent_id": 3,
+    "domain": "charlie.example.com",
+    "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
+    "tee_enabled": true,
+    "balance_eth": "0.1",
+    "card": {
+      "name": "Feedback Client",
+      "description": "Provides service feedback"
+    }
+  }
 }
 ```
 
@@ -176,39 +233,85 @@ Check server reputation
 }
 ```
 
-### TEE Attestation
+### TEE Operations
 
-#### GET /attestation/{agent_type}
-Get TEE attestation for agent
+#### GET /tee/status
+Get TEE simulator status and configuration
 ```json
 {
-  "attestation": {
-    "has_attestation": true,
-    "tee_endpoint": "/var/run/dstack.sock",
-    "quote": "base64_encoded_quote",
-    "agent_address": "0x..."
+  "tee_enabled": true,
+  "simulator_endpoint": ".dstack/sdk/simulator/dstack.sock",
+  "simulator_active": true,
+  "agents": {
+    "server": {
+      "domain": "alice.example.com",
+      "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
+      "funded": true,
+      "balance_eth": "0.1"
+    },
+    "validator": {
+      "domain": "bob.example.com",
+      "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
+      "funded": true,
+      "balance_eth": "0.1"
+    },
+    "client": {
+      "domain": "charlie.example.com",
+      "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
+      "funded": true,
+      "balance_eth": "0.1"
+    }
   }
+}
+```
+
+#### POST /tee/fund
+Manually trigger TEE wallet funding
+```json
+// Response
+{
+  "funded": ["server", "validator", "client"],
+  "already_funded": [],
+  "total_eth_sent": "0.3"
 }
 ```
 
 ### Workflow
 
 #### POST /workflow/complete
-Execute complete workflow
+Execute complete workflow with all agent interactions
 ```json
 // Request
 {
   "symbol": "ETH",
-  "timeframe": "4h"
+  "timeframe": "4h",
+  "auto_fund": true  // Auto-fund agents if needed
 }
 
 // Response
 {
   "workflow": {
-    "analysis": {...},
-    "validation": {...},
-    "feedback": {...},
-    "transactions": ["0x...", "0x..."]
+    "agents_registered": true,
+    "tee_mode": true,
+    "analysis": {
+      "symbol": "ETH",
+      "trend": "bullish",
+      "confidence": 87
+    },
+    "validation": {
+      "is_valid": true,
+      "score": 92
+    },
+    "feedback": {
+      "submitted": true,
+      "score": 85
+    },
+    "transactions": [
+      "0x...analysis_tx",
+      "0x...validation_tx",
+      "0x...feedback_tx"
+    ],
+    "reputation_updated": true
   }
 }
 ```
@@ -283,10 +386,27 @@ API_PORT=8000
 
 # Blockchain
 RPC_URL=http://127.0.0.1:8545
+CHAIN_ID=31337
 
-# TEE
-DSTACK_SIMULATOR_ENDPOINT=/path/to/socket
+# TEE Authentication Mode
+USE_TEE_AUTH=true  # Enable Phala Cloud TEE mode
 
-# AI/ML
+# TEE Agent Configuration (for deterministic keys)
+SERVER_AGENT_DOMAIN=alice.example.com
+SERVER_AGENT_SALT=server-secret-salt-2024
+VALIDATOR_AGENT_DOMAIN=bob.example.com
+VALIDATOR_AGENT_SALT=validator-secret-salt-2024
+CLIENT_AGENT_DOMAIN=charlie.example.com
+CLIENT_AGENT_SALT=client-secret-salt-2024
+
+# Traditional Mode Keys (when USE_TEE_AUTH=false)
+SERVER_AGENT_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+VALIDATOR_AGENT_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+CLIENT_AGENT_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
+
+# TEE Simulator
+DSTACK_SIMULATOR_ENDPOINT=.dstack/sdk/simulator/dstack.sock
+
+# AI/ML (Optional)
 OPENAI_API_KEY=your-openai-key
 ```

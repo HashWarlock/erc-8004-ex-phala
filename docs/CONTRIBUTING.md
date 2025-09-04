@@ -31,6 +31,17 @@ Thank you for your interest in contributing to the ERC-8004 Trustless Agents pro
 
 ### 1. Setup Development Environment
 
+```bash
+# Install Flox (required)
+curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
+
+# Setup project
+git clone <your-fork>
+cd erc-8004-ex-phala
+flox activate
+cp .env.example .env
+```
+
 See [Development Guide](DEVELOPMENT.md) for detailed setup instructions.
 
 ### 2. Branch Naming

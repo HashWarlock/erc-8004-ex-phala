@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive testing suite covering unit, integration, and end-to-end tests for the ERC-8004 Trustless Agents system. All tests run against real simulators (Anvil blockchain and dstack TEE simulator) without using mock data to ensure realistic testing conditions.
+Comprehensive testing suite covering unit, integration, and end-to-end tests for the ERC-8004 Trustless Agents system with Phala Cloud TEE integration. All tests support both traditional key-based and TEE-based authentication modes.
 
 ## Test Structure
 
@@ -17,26 +17,27 @@ tests/
 
 ## Prerequisites
 
-### Required Simulators
-
-All tests require real simulators to be running:
+### Required Services
 
 1. **Anvil Blockchain** (Required for all tests)
    ```bash
-   make anvil
+   flox activate -- make anvil
    # Runs in foreground - keep this terminal open
    ```
 
-2. **TEE Simulator** (Required for TEE tests)
+2. **Deploy Contracts** (Required for integration tests)
    ```bash
-   make tee-start
-   # Verify it's running:
-   ls .dstack/sdk/simulator/dstack.sock
+   flox activate -- make deploy
+   # This also funds TEE wallets if USE_TEE_AUTH=true
    ```
 
-3. **Deploy Contracts** (Required for integration tests)
+3. **TEE Simulator** (Auto-started when USE_TEE_AUTH=true)
    ```bash
-   make deploy
+   # Manually start if needed:
+   flox activate -- make tee-start
+   
+   # Verify it's running:
+   flox activate -- make tee-status
    ```
 
 ### Automatic Simulator Management
@@ -49,61 +50,62 @@ Tests will automatically check for running simulators and provide clear error me
 
 ```bash
 # Terminal 1: Start Anvil blockchain
-make anvil
+flox activate -- make anvil
 # Leave this running
 
-# Terminal 2: Start TEE simulator (optional, for TEE tests)
-make tee-start
-# Leave this running
-
-# Terminal 3: Deploy contracts and run tests
-# First ensure you have a .env file
+# Terminal 2: Deploy and test
+# Copy environment configuration
 cp .env.example .env  # If .env doesn't exist
 
-# Deploy contracts (required for integration tests)
-make deploy
+# Deploy contracts (auto-funds TEE wallets if enabled)
+flox activate -- make deploy
 
-# Run all tests
-make test
+# Run end-to-end test
+flox activate -- make test-e2e
 
-# Or run specific test suites
-make test-unit    # Unit tests only (no contracts needed)
-make test-int     # Integration tests (requires deployed contracts)
-make test-e2e     # End-to-end tests (requires all services)
-make test-tee     # TEE-specific tests (requires TEE simulator)
+# Or run the complete demo
+flox activate -- ./run_demo.sh
+
+# Test with TEE mode explicitly
+USE_TEE_AUTH=true flox activate -- make test-e2e
 ```
 
-### Alternative: Direct pytest with Flox
+### Running Different Test Suites
 
 ```bash
-# If you prefer running pytest directly
-flox activate -- pytest tests/ -v
+# Unit tests (no blockchain needed)
+flox activate -- make test-unit
 
-# Or specific test directories
-flox activate -- pytest tests/unit/ -v
-flox activate -- pytest tests/integration/ -v
+# Integration tests (requires blockchain and contracts)
+flox activate -- make test-int
+
+# End-to-end tests (complete workflow)
+flox activate -- make test-e2e
+
+# TEE-specific tests
+USE_TEE_AUTH=true flox activate -- make test-tee
+
+# All tests with coverage
+flox activate -- make test-cov
 ```
 
-### Detailed Test Commands
+### Test Commands Reference
 
 ```bash
-# Unit tests only
-pytest tests/unit/ -v
+# Run specific test file
+flox activate -- python -m pytest tests/integration/test_tee_integration.py -v
 
-# Integration tests
-pytest tests/integration/ -v
+# Run tests matching pattern
+flox activate -- python -m pytest -k "test_tee" -v
 
-# E2E tests
-pytest tests/e2e/ -v
+# Run with detailed output
+flox activate -- python -m pytest -vvs
 
-# API tests
-pytest tests/api/ -v
+# Run failed tests only
+flox activate -- python -m pytest --lf
 
-# With coverage
-pytest --cov=agents --cov=api --cov-report=html
-
-# Parallel execution
-pytest -n auto
+# Parallel execution (faster)
+flox activate -- python -m pytest -n auto
 ```
 
 ## Test Categories
@@ -134,22 +136,24 @@ pytest -n auto
 - Client feedback flow
 - Complete agent workflows
 
-#### TEE Integration (`test_tee_integration.py`)
-- TEE key derivation
-- Attestation generation
+#### TEE Integration (`test_tee_integration.py`, `test_phala_deployment.py`)
+- TEE key derivation with deterministic addresses
+- Automatic wallet funding for TEE agents
 - TEE-enabled agent operations
+- Phala Cloud deployment testing
 
 ### End-to-End Tests
 
-#### Complete Workflow (`test_workflow.py`)
+#### Complete Workflow (`test_workflow.py`, `test_simple.py`)
 ```python
 def test_complete_workflow():
-    # 1. Deploy contracts
-    # 2. Register agents
-    # 3. Request analysis
-    # 4. Validate work
-    # 5. Submit feedback
-    # 6. Verify reputation
+    # 1. Initialize agents (TEE or traditional)
+    # 2. Auto-fund wallets if needed
+    # 3. Register agents on blockchain
+    # 4. Request market analysis
+    # 5. Validate work
+    # 6. Submit feedback
+    # 7. Verify reputation updates
 ```
 
 ### API Tests
@@ -162,47 +166,45 @@ def test_complete_workflow():
 
 ## Test Fixtures
 
-### Common Fixtures (`conftest.py`)
-
-All fixtures connect to real simulators - no mocking:
+### Common Fixtures
 
 ```python
 @pytest.fixture
-def simulator_manager():
-    """Manages simulator instances for testing"""
-    # Ensures Anvil and TEE simulators are running
-    # Deploys contracts if needed
-
-@pytest.fixture
-def w3(simulator_manager):
-    """Web3 instance connected to real Anvil blockchain"""
-    return get_test_web3()
-
-@pytest.fixture
-def tee_client(simulator_manager):
-    """TEE client connected to real dstack simulator"""
-    return get_test_tee_client()
+def w3():
+    """Web3 instance connected to Anvil blockchain"""
+    return Web3(Web3.HTTPProvider("http://localhost:8545"))
 
 @pytest.fixture
 def deployed_contracts():
-    """Load actually deployed contracts from Anvil"""
-    # Returns real contract addresses
+    """Load deployed contract addresses"""
+    with open("deployed_contracts.json") as f:
+        return json.load(f)
 
 @pytest.fixture
 def test_agents(deployed_contracts):
-    """Initialize agents with real blockchain connection"""
-    # Creates agents connected to real simulators
+    """Initialize agents based on USE_TEE_AUTH setting"""
+    if os.getenv("USE_TEE_AUTH", "false").lower() == "true":
+        # Create TEE agents with deterministic keys
+        return create_tee_agents()
+    else:
+        # Create traditional agents with private keys
+        return create_traditional_agents()
 ```
 
 ## Simulator-Based Testing
 
-### No Mock Data Policy
+### Testing Modes
 
-All tests must use real simulators:
-- **Blockchain interactions**: Real Anvil instance
-- **TEE operations**: Real dstack simulator
-- **Contract calls**: Actually deployed contracts
-- **Agent operations**: Real transactions on test chain
+#### Traditional Mode (USE_TEE_AUTH=false)
+- Uses private keys from .env file
+- Direct wallet control
+- Simpler setup for development
+
+#### TEE Mode (USE_TEE_AUTH=true)
+- Deterministic key derivation
+- Automatic wallet funding
+- Production-like security model
+- Requires TEE simulator
 
 ### Test Utilities
 
@@ -216,45 +218,55 @@ from tests.test_utils import (
 )
 ```
 
-### Test Data
+### Test Configuration
 
 ```python
-# Test accounts
-TEST_ACCOUNTS = {
+# TEE Agent Configuration (deterministic)
+TEE_AGENTS = {
+    "server": {
+        "domain": "alice.example.com",
+        "salt": "server-secret-salt-2024",
+        "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D"
+    },
+    "validator": {
+        "domain": "bob.example.com",
+        "salt": "validator-secret-salt-2024",
+        "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F"
+    },
+    "client": {
+        "domain": "charlie.example.com",
+        "salt": "client-secret-salt-2024",
+        "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d"
+    }
+}
+
+# Traditional Mode Keys (Anvil defaults)
+TRADITIONAL_KEYS = {
     "server": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     "validator": "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
     "client": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
-}
-
-# Test analysis data
-TEST_ANALYSIS = {
-    "symbol": "BTC",
-    "timeframe": "1d",
-    "trend": "bullish",
-    "confidence": 85
 }
 ```
 
 ## Test Environment Setup
 
-### Local Blockchain
+### Environment Setup
 
 ```bash
-# Start Anvil with test configuration
-anvil --fork-url $FORK_URL \
-      --chain-id 31337 \
-      --accounts 10 \
-      --balance 1000
-```
+# Start Anvil blockchain
+flox activate -- anvil
 
-### TEE Simulator
+# TEE simulator (auto-starts when needed)
+# Manual control:
+flox activate -- make tee-start
+flox activate -- make tee-status
+flox activate -- make tee-logs
+flox activate -- make tee-stop
 
-```bash
-# Start dstack simulator
-make tee-start
-
-# Verify simulator
-curl http://localhost:8080/health
+# Fund TEE wallets
+flox activate -- make tee-fund
+# Or use the Python script directly:
+flox activate -- python scripts/fund_tee_wallets.py
 ```
 
 ## Test Coverage
@@ -405,30 +417,45 @@ def test_time_dependent(w3):
 
 ### Common Issues
 
-1. **Deploy fails with "BASESCAN_API_KEY not found"**
-   - Solution: The Makefile now provides dummy values for local deployment
-   - If still failing, ensure you're using the latest Makefile
+1. **Anvil not running**
+   ```bash
+   # Start in separate terminal
+   flox activate -- make anvil
+   ```
 
-2. **Deploy fails with "PRIVATE_KEY not found"**
-   - Solution: Copy .env.example to .env: `cp .env.example .env`
-   - The example includes Anvil's default private key for testing
+2. **Contracts not deployed**
+   ```bash
+   flox activate -- make deploy
+   ```
 
-3. **Tests fail with "Contract not deployed"**
-   - Solution: Run `make deploy` after starting Anvil
-   - Ensure Anvil is running: `curl http://127.0.0.1:8545`
+3. **TEE wallets not funded**
+   ```bash
+   # Auto-funds during deploy, or manually:
+   flox activate -- make tee-fund
+   ```
 
-4. **Import Errors**: Ensure project root in PYTHONPATH
-   - Solution: Run tests from project root with `make test`
+4. **DomainAlreadyRegistered error**
+   - Tests now add unique timestamps to prevent this
+   - If persists, restart Anvil and redeploy
 
-5. **TEE Connection Failed**: Start simulator with `make tee-start`
-   - TEE tests will skip if simulator not running
+5. **AgentNotFound (0xe93ba223) error**
+   - Expected when agent isn't registered yet
+   - Tests handle this automatically
 
-6. **Timeout Errors**: Increase pytest timeout
-   - Solution: `pytest --timeout=60`
+6. **Import errors**
+   ```bash
+   # Always use flox activate
+   flox activate -- python your_test.py
+   ```
 
-7. **"make: command not found" errors**
-   - Ensure you're in the project root directory
-   - Check that Makefile exists: `ls Makefile`
+7. **Test failures after code changes**
+   ```bash
+   # Reset everything
+   flox activate -- make reset
+   flox activate -- make anvil  # In separate terminal
+   flox activate -- make deploy
+   flox activate -- make test
+   ```
 
 ### Debug Commands
 

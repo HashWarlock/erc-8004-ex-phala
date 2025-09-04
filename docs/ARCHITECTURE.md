@@ -2,7 +2,13 @@
 
 ## System Overview
 
-The ERC-8004 Trustless Agents system implements a decentralized agent framework with TEE (Trusted Execution Environment) integration via Phala Cloud. The architecture enables autonomous agents to interact trustlessly through blockchain-based registries while maintaining privacy and security through TEE attestation.
+The ERC-8004 Trustless Agents system implements a decentralized agent framework with Phala Cloud TEE (Trusted Execution Environment) integration. The architecture enables autonomous agents to interact trustlessly through blockchain-based registries while maintaining privacy and security through deterministic key derivation and optional TEE attestation.
+
+### Key Features
+- **Dual Mode Operation**: Supports both TEE-based (USE_TEE_AUTH=true) and traditional key-based authentication
+- **Automatic Wallet Funding**: TEE agents are automatically funded during initialization
+- **Deterministic Key Generation**: TEE mode derives keys from domain and salt combinations
+- **ERC-8004 Compliance**: Full implementation of the trustless agent standard
 
 ## Core Components
 
@@ -18,52 +24,88 @@ Three core registry contracts manage agent interactions:
 
 #### Base Agents
 - `ERC8004BaseAgent`: Standard agent implementation with Web3 integration
-- `ERC8004TEEAgent`: TEE-enabled agent with secure key derivation
+- `ERC8004TEEAgent`: TEE-enabled agent with deterministic key derivation
 
-#### Specialized Agents
-- **ServerAgent**: Provides market analysis services using CrewAI
-- **ValidatorAgent**: Validates analysis work from server agents
-- **ClientAgent**: Manages feedback and reputation interactions
+#### Specialized Agents (Support Both Modes)
+- **ServerAgent/TEEServerAgent**: Market analysis services using CrewAI
+  - Domain: `alice.example.com` (TEE mode)
+  - Address: `0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D` (TEE mode)
+  
+- **ValidatorAgent/TEEValidatorAgent**: Validates analysis work
+  - Domain: `bob.example.com` (TEE mode)
+  - Address: `0x83247F3B9772D2b0220A08b8fF01E95A28f7423F` (TEE mode)
+  
+- **ClientAgent/TEEClientAgent**: Manages feedback and reputation
+  - Domain: `charlie.example.com` (TEE mode)
+  - Address: `0x54AF215206E971ADE501373E0a6Ace7369B5c22d` (TEE mode)
 
 ### 3. TEE Integration (Phala Cloud)
 
-TEE provides hardware-based security guarantees:
+TEE provides deterministic key generation and optional hardware security:
 
 ```python
 # TEE Key Derivation Flow
-TEE Client → get_key(path, purpose) → Deterministic Private Key
-           → get_quote(data) → Attestation Quote
+Agent Domain + Salt → TEE Client → get_key(path) → Deterministic Private Key
+                                 → Ethereum Address
+
+# Example:
+"alice.example.com" + "server-secret-salt-2024" 
+    → 0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D
 ```
 
 Key features:
-- Deterministic key derivation from TEE
-- Hardware attestation for trust verification
-- Secure enclave execution environment
+- **Deterministic Key Derivation**: Same domain+salt always produces same key
+- **Automatic Funding**: TEE wallets funded automatically during setup
+- **Optional Attestation**: Hardware attestation available for production
+- **Development Mode**: TEE simulator for local testing
 
 ### 4. API Layer
 
-FastAPI-based REST API with WebSocket support:
+FastAPI-based REST API with automatic agent initialization:
 
 ```
-/agents         - Agent information and cards
-/server/*       - Server agent operations
-/validator/*    - Validator agent operations  
-/client/*       - Client agent operations
-/attestation/*  - TEE attestation endpoints
-/workflow/*     - Complete workflow orchestration
+/health         - Health check with agent registration status
+/agents         - Agent information with TEE/traditional mode
+/server/*       - Server agent market analysis endpoints
+/validator/*    - Validator agent validation endpoints  
+/client/*       - Client agent feedback endpoints
+/tee/status     - TEE configuration and wallet funding status
+/tee/fund       - Manually trigger TEE wallet funding
+/workflow/*     - Complete E2E workflow orchestration
 /ws/*           - WebSocket real-time updates
 ```
+
+**Auto-initialization on API startup:**
+1. Detects TEE mode from USE_TEE_AUTH environment variable
+2. Creates appropriate agent instances (TEE or traditional)
+3. Funds wallets if balance < 0.01 ETH
+4. Registers agents on blockchain
+5. Exposes endpoints for interaction
 
 ## Data Flow
 
 ### Agent Registration Flow
 ```mermaid
 sequenceDiagram
-    Agent->>TEE: Derive Private Key
-    TEE-->>Agent: Key + Attestation
-    Agent->>IdentityRegistry: Register (domain, address)
-    IdentityRegistry-->>Agent: Agent ID
-    Agent->>API: Expose Services
+    participant API
+    participant TEE
+    participant Blockchain
+    participant Registry
+    
+    API->>API: Check USE_TEE_AUTH
+    alt TEE Mode
+        API->>TEE: get_key(domain + salt)
+        TEE-->>API: Deterministic Key
+    else Traditional Mode
+        API->>API: Load private key from .env
+    end
+    API->>Blockchain: Check wallet balance
+    alt Balance < 0.01 ETH
+        API->>Blockchain: Fund from Anvil account[0]
+    end
+    API->>Registry: newAgent(domain, address, card)
+    Registry-->>API: Agent ID (via event)
+    API->>API: Agent ready for service
 ```
 
 ### Analysis Workflow
@@ -99,31 +141,48 @@ sequenceDiagram
 
 ### Local Development
 ```
-Docker Compose
-├── Anvil (Local Blockchain)
-├── TEE Simulator (dstack)
-├── API Server
-└── Agent Services
+Flox Environment (Required)
+├── Anvil (Local Blockchain - make anvil)
+├── TEE Simulator (Auto-started when USE_TEE_AUTH=true)
+├── Contract Deployment (make deploy - includes funding)
+├── API Server (python run_api.py)
+└── Agent Services (Auto-initialized on API startup)
 ```
 
-### Phala Cloud Production
+### Production Deployment Options
+
+#### Phala Cloud TEE
 ```
-Phala CVM
-├── TEE Environment
+Phala Network
+├── TEE Hardware Environment
+├── Deterministic Key Generation
 ├── Agent Containers
 ├── API Gateway
-└── Blockchain Connection
+└── Blockchain Connection (Phala testnet/mainnet)
+```
+
+#### Traditional Cloud
+```
+Docker/Kubernetes
+├── API Container
+├── Agent Services
+├── Private Key Management (Vault/KMS)
+└── Blockchain Connection (Any EVM chain)
 ```
 
 ## Technology Stack
 
+- **Environment Manager**: Flox (required for all operations)
 - **Blockchain**: Ethereum-compatible (Anvil local, any EVM production)
-- **Smart Contracts**: Solidity with Foundry framework
-- **TEE**: Phala Cloud with dstack SDK
-- **Backend**: Python with FastAPI
-- **AI/ML**: CrewAI for multi-agent orchestration
-- **Containerization**: Docker with Flox environment
-- **Testing**: Pytest with comprehensive test suites
+- **Smart Contracts**: Solidity 0.8.19+ with Foundry framework
+- **TEE**: Phala Cloud with dstack SDK (optional, based on USE_TEE_AUTH)
+- **Backend**: Python 3.10+ with FastAPI
+- **AI/ML**: CrewAI for multi-agent orchestration (optional)
+- **Web3**: web3.py for blockchain interaction
+- **Testing**: Pytest with unit, integration, and E2E tests
+- **Key Management**: 
+  - TEE mode: Deterministic derivation from domain+salt
+  - Traditional: Private keys in environment variables
 
 ## Scalability Considerations
 

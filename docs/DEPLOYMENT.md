@@ -2,11 +2,10 @@
 
 ## Prerequisites
 
-- Flox environment manager
-- Docker and Docker Compose
-- Node.js (for contract deployment)
-- Python 3.10+
-- Access to Phala Cloud (for production)
+- Flox environment manager (required for all operations)
+- Git
+- 4GB RAM minimum
+- Access to Phala Cloud (for production TEE deployment)
 
 ## Local Development Deployment
 
@@ -17,108 +16,116 @@
 git clone <repository>
 cd erc-8004-ex-phala
 
-# Initialize Flox environment
-flox activate
+# Install Flox if not already installed
+curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
 
-# Install dependencies
-make install
+# Activate Flox environment (provides all dependencies)
+flox activate
 ```
 
 ### 2. Configure Environment
 
-Create `.env` file:
 ```bash
-# Blockchain
-RPC_URL=http://127.0.0.1:8545
-CHAIN_ID=31337
+# Copy example configuration
+cp .env.example .env
+```
 
-# Agent Keys (for development)
-SERVER_AGENT_KEY=0x...
-VALIDATOR_AGENT_KEY=0x...
-CLIENT_AGENT_KEY=0x...
+The `.env` file includes two modes:
 
-# API
-API_TOKEN=your-secure-token
-API_PORT=8000
+**TEE Mode (USE_TEE_AUTH=true) - Recommended:**
+```bash
+# TEE Authentication with deterministic keys
+USE_TEE_AUTH=true
 
-# TEE Simulator
-DSTACK_SIMULATOR_ENDPOINT=.dstack/sdk/simulator/dstack.sock
-DEVELOPMENT_MODE=true
+# Agent domains and salts for key derivation
+SERVER_AGENT_DOMAIN=alice.example.com
+SERVER_AGENT_SALT=server-secret-salt-2024
+VALIDATOR_AGENT_DOMAIN=bob.example.com
+VALIDATOR_AGENT_SALT=validator-secret-salt-2024
+CLIENT_AGENT_DOMAIN=charlie.example.com
+CLIENT_AGENT_SALT=client-secret-salt-2024
+```
 
-# AI/ML (optional)
-OPENAI_API_KEY=your-key
+**Traditional Mode (USE_TEE_AUTH=false):**
+```bash
+# Use Anvil's default test keys
+USE_TEE_AUTH=false
+SERVER_AGENT_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+VALIDATOR_AGENT_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+CLIENT_AGENT_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
 ```
 
 ### 3. Start Services
 
 ```bash
-# Start services individually (no combined start command):
-make anvil          # Terminal 1: Start local blockchain
-make tee-start      # Terminal 2: Start TEE simulator
-make deploy         # Terminal 3: Deploy contracts (after anvil is running)
-# API server: python run_api.py (if available)
+# Terminal 1: Start Anvil blockchain
+flox activate -- make anvil
+
+# Terminal 2: Deploy contracts and fund wallets
+flox activate -- make deploy
+# This automatically funds TEE wallets if USE_TEE_AUTH=true
+
+# Terminal 3: Start API server
+flox activate -- python run_api.py
+# The API auto-registers and funds agents on startup
 ```
 
 ### 4. Verify Deployment
 
 ```bash
-# Check health
+# Check API health
 curl http://localhost:8000/health
 
-# Run tests
-make test
+# Run end-to-end test
+flox activate -- make test-e2e
+
+# Or run complete demo
+flox activate -- ./run_demo.sh
+
+# Test with TEE mode explicitly
+USE_TEE_AUTH=true flox activate -- ./run_demo.sh
 ```
 
 ## Phala Cloud Production Deployment
 
-### 1. Prepare Container Image
+### 1. Build and Deploy to Phala Testnet
 
 ```bash
-# Build with Flox
-flox containerize
+# Deploy contracts to Phala testnet
+flox activate -- ./scripts/deploy_phala_testnet.sh
 
-# Or use Docker
+# Fund TEE wallets on testnet
+flox activate -- python scripts/fund_tee_wallets.py
+```
+
+### 2. Configure for Phala Cloud
+
+```bash
+# Set production environment variables
+export RPC_URL=https://poc6-rpc.phala.network
+export CHAIN_ID=1001  # Phala testnet chain ID
+export USE_TEE_AUTH=true
+
+# Generate secure API token
+export API_TOKEN=$(openssl rand -hex 32)
+```
+
+### 3. Deploy with Docker
+
+```bash
+# Build Docker image
 docker build -t erc8004-agents .
-```
 
-### 2. Configure Phala CVM
-
-Create `phala-config.yml`:
-```yaml
-version: '1.0'
-name: erc8004-agents
-image: erc8004-agents:latest
-
-resources:
-  cpu: 2
-  memory: 4096
-  storage: 10
-
-network:
-  ports:
-    - 8000:8000
-  
-env:
-  RPC_URL: ${RPC_URL}
-  CHAIN_ID: ${CHAIN_ID}
-  API_TOKEN: ${API_TOKEN}
-  
-tee:
-  enabled: true
-  attestation: required
-```
-
-### 3. Deploy to Phala Cloud
-
-```bash
-# Login to Phala Cloud
-phala login
-
-# Deploy CVM
-phala deploy --config phala-config.yml
-
-# Get deployment info
-phala status erc8004-agents
+# Run with TEE support
+docker run -d \
+  --name erc8004-agents \
+  -p 8000:8000 \
+  -e RPC_URL=$RPC_URL \
+  -e CHAIN_ID=$CHAIN_ID \
+  -e USE_TEE_AUTH=true \
+  -e API_TOKEN=$API_TOKEN \
+  -v /var/run/dstack.sock:/var/run/dstack.sock \
+  erc8004-agents
 ```
 
 ### 4. Configure Production Environment
@@ -148,37 +155,24 @@ phala ssl enable --domain agents.yourdomain.com
 
 ## Docker Compose Deployment
 
-### 1. Production docker-compose.yml
+Use the provided `docker-compose.yml`:
 
-```yaml
-version: '3.8'
+```bash
+# Start all services
+flox activate -- docker-compose up -d
 
-services:
-  api:
-    image: erc8004-agents:latest
-    ports:
-      - "8000:8000"
-    environment:
-      - RPC_URL=${RPC_URL}
-      - CHAIN_ID=${CHAIN_ID}
-      - API_TOKEN=${API_TOKEN}
-      - DSTACK_ENDPOINT=/var/run/dstack.sock
-    volumes:
-      - /var/run/dstack.sock:/var/run/dstack.sock
-    restart: unless-stopped
+# View logs
+flox activate -- docker-compose logs -f
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - api
-    restart: unless-stopped
+# Stop services
+flox activate -- docker-compose down
 ```
+
+The compose file includes:
+- Anvil blockchain (for testing)
+- API server with TEE support
+- Automatic contract deployment
+- Health monitoring
 
 ### 2. Start Services
 
@@ -263,32 +257,53 @@ Configure Prometheus/Grafana for monitoring:
 
 ### Common Issues
 
-1. **TEE Connection Failed**
-   - Verify dstack socket path
-   - Check TEE simulator is running
-   - Ensure proper permissions
+1. **Anvil not running**
+   ```bash
+   # Start in separate terminal
+   flox activate -- make anvil
+   ```
 
-2. **Contract Deployment Failed**
-   - Check RPC URL connectivity
-   - Verify account has sufficient funds
-   - Ensure correct chain ID
+2. **Contracts not deployed**
+   ```bash
+   # Deploy and fund wallets
+   flox activate -- make deploy
+   ```
 
-3. **API Not Responding**
-   - Check port availability
-   - Verify environment variables
-   - Review API logs
+3. **TEE wallets not funded**
+   ```bash
+   # Fund TEE wallets
+   flox activate -- make tee-fund
+   ```
+
+4. **Import errors**
+   ```bash
+   # Always use flox activate
+   flox activate -- <command>
+   ```
+
+5. **Reset everything**
+   ```bash
+   flox activate -- make reset
+   # Then start fresh
+   ```
 
 ### Debug Commands
 
 ```bash
-# Test TEE connection
-make tee-status
+# Check TEE status
+flox activate -- make tee-status
 
-# Verify contracts are deployed
+# View deployed contracts
 cat deployed_contracts.json
 
-# Test the system
-make test
+# Check agent balances
+flox activate -- python scripts/fund_tee_wallets.py
+
+# Run full test suite
+flox activate -- make test
+
+# View API logs
+tail -f api.log
 ```
 
 ## Security Considerations

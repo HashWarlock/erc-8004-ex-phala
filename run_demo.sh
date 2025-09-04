@@ -38,6 +38,13 @@ else
     echo "✅ Contracts already deployed"
 fi
 
+# Check if TEE mode is enabled and fund wallets if needed
+if [ "$USE_TEE_AUTH" = "true" ]; then
+    echo ""
+    echo "🔐 TEE mode enabled, checking wallet funding..."
+    flox activate -- make tee-fund
+fi
+
 echo ""
 echo "🚀 Running end-to-end test..."
 echo ""

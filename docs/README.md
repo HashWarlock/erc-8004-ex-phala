@@ -5,23 +5,36 @@ This directory contains comprehensive documentation for the ERC-8004 Trustless A
 
 ## Documentation Structure
 
-### 📚 Main Documentation
+### 📚 Core Documentation
 
-- **[Architecture Guide](ARCHITECTURE.md)** - System architecture, component design, and TEE integration
-- **[API Reference](API_REFERENCE.md)** - Complete API documentation for all endpoints
-- **[Deployment Guide](DEPLOYMENT.md)** - Instructions for deploying to Phala Cloud
-- **[Testing Guide](TESTING.md)** - Comprehensive testing documentation
+- **[Architecture Guide](ARCHITECTURE.md)** - System architecture, TEE integration, dual-mode operation
+- **[API Reference](API_REFERENCE.md)** - Complete API documentation with TEE endpoints
+- **[Deployment Guide](DEPLOYMENT.md)** - Local and Phala Cloud deployment instructions
+- **[Testing Guide](TESTING.md)** - Testing with TEE mode and traditional mode
 
 ### 🔧 Development Guides
 
-- **[Development Setup](DEVELOPMENT.md)** - Local development environment setup
-- **[Agent Implementation](AGENTS.md)** - Guide to implementing custom agents
-- **[Smart Contracts](CONTRACTS.md)** - Contract deployment and interaction
-
-### 📖 Additional Resources
-
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Development Setup](DEVELOPMENT.md)** - Flox environment setup and development workflow
+- **[Developer Tasks](../TODO.md)** - Sprint tasks and setup checklists for developers
 - **[Contributing](CONTRIBUTING.md)** - Guidelines for contributors
+
+### 🚀 Quick Start
+
+```bash
+# Install Flox
+curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
+
+# Clone and setup
+git clone <repository>
+cd erc-8004-ex-phala
+flox activate
+cp .env.example .env
+
+# Start development
+flox activate -- make anvil    # Terminal 1
+flox activate -- make deploy   # Terminal 2
+flox activate -- ./run_demo.sh # Terminal 3
+```
 
 ## Quick Links
 
@@ -31,7 +44,16 @@ This directory contains comprehensive documentation for the ERC-8004 Trustless A
 - [Smart Contracts](../contracts/)
 - [Tests](../tests/)
 
+## Key Features
+
+- **Dual Mode Operation**: Supports both TEE-based and traditional key authentication
+- **Automatic Wallet Funding**: TEE agents auto-funded during initialization
+- **Phala Cloud Integration**: Deterministic key derivation via TEE
+- **Complete Test Suite**: Unit, integration, and E2E tests included
+- **Flox Environment**: All dependencies managed through Flox
+
 ## Documentation Status
 
-Last Updated: December 2024
+Last Updated: September 2025
 Version: 1.0.0
+TEE Mode: Fully Implemented

@@ -14,6 +14,7 @@ help:
 	@echo ""
 	@echo "  Services:"
 	@echo "    make anvil        - Start Anvil blockchain"
+	@echo "    make tee-fund     - Fund TEE-generated wallets"
 	@echo "    make tee-start    - Start TEE simulator"
 	@echo "    make tee-stop     - Stop TEE simulator"
 	@echo "    make tee-status   - Check TEE simulator status"
@@ -61,6 +62,8 @@ deploy:
 	@flox activate -- bash -c "set -a && source .env && set +a && cd contracts && BASESCAN_API_KEY=dummy ETHERSCAN_API_KEY=dummy forge script script/Deploy.s.sol:Deploy --rpc-url http://127.0.0.1:8545 --broadcast"
 	@echo "  Creating deployed_contracts.json..."
 	@flox activate -- python scripts/create_deployed_contracts.py
+	@echo "  Checking TEE wallet funding..."
+	@flox activate -- bash -c "set -a && source .env && set +a && python scripts/fund_tee_wallets.py" 2>/dev/null || true
 	@echo "✅ Contracts deployed"
 
 # Testing (requires simulators)
@@ -190,6 +193,11 @@ test-workflow:
 	@make build
 	@make deploy
 	@make test-e2e
+
+# TEE Setup and Funding
+tee-fund:
+	@echo "💰 Funding TEE wallets..."
+	@flox activate -- bash -c "set -a && source .env && set +a && python scripts/fund_tee_wallets.py"
 
 # TEE Simulator commands
 tee-setup:

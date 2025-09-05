@@ -42,7 +42,6 @@ contract Deploy is Script {
         console.log("IdentityRegistry:", address(identityRegistry));
         console.log("ReputationRegistry:", address(reputationRegistry));
         console.log("ValidationRegistry:", address(validationRegistry));
-        console.log("\nRegistration fee:", identityRegistry.REGISTRATION_FEE());
         console.log("Validation expiration slots:", validationRegistry.getExpirationSlots());
     }
 }

@@ -127,7 +127,7 @@ class ERC8004BaseAgent:
         )
         
         # Estimate gas
-        gas_estimate = function.estimate_gas({'from': self.address, 'value': self.w3.to_wei(0.005, 'ether')})
+        gas_estimate = function.estimate_gas({'from': self.address})
         
         # Build transaction
         transaction = function.build_transaction({
@@ -135,7 +135,6 @@ class ERC8004BaseAgent:
             'gas': int(gas_estimate * 1.2),
             'gasPrice': self.w3.eth.gas_price,
             'nonce': self.w3.eth.get_transaction_count(self.address),
-            'value': self.w3.to_wei(0.005, 'ether')  # Registration fee
         })
         
         # Sign and send
@@ -247,7 +246,7 @@ class ERC8004BaseAgent:
         
         print(f"🔍 Requesting validation from agent {validator_agent_id}")
         
-        function = self.validation_registry.functions.ValidationRequest(
+        function = self.validation_registry.functions.validationRequest(
             validator_agent_id,
             self.agent_id,
             data_hash
@@ -288,7 +287,7 @@ class ERC8004BaseAgent:
         
         print(f"📊 Submitting validation response: {response}/100")
         
-        function = self.validation_registry.functions.ValidationResponse(
+        function = self.validation_registry.functions.validationResponse(
             data_hash,
             response
         )

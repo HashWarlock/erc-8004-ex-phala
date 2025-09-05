@@ -26,10 +26,24 @@ class ERC8004BaseAgent:
             private_key: Private key for signing transactions
         """
         self.agent_domain = agent_domain
+        self.private_key_override = private_key
+        
+        # Initialize Web3 connection based on network
+        self.network = os.getenv('NETWORK', 'local')
+        if self.network == 'sepolia':
+            rpc_url = os.getenv('SEPOLIA_RPC_URL')
+            private_key = os.getenv('SEPOLIA_PRIVATE_KEY')
+            self.chain_id = int(os.getenv('SEPOLIA_CHAIN_ID'))
+        else: # default to local
+            rpc_url = os.getenv('LOCAL_RPC_URL', 'http://127.0.0.1:8545')
+            private_key = os.getenv('LOCAL_PRIVATE_KEY')
+            self.chain_id = int(os.getenv('LOCAL_CHAIN_ID', 31337))
+
+        if self.private_key_override:
+            private_key = self.private_key_override
+
         self.private_key = private_key
         
-        # Initialize Web3 connection
-        rpc_url = os.getenv('RPC_URL', 'http://127.0.0.1:8545')
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         
         if not self.w3.is_connected():
@@ -50,18 +64,23 @@ class ERC8004BaseAgent:
         self._check_registration()
     
     def _load_contract_addresses(self):
-        """Load contract addresses from deployment.json"""
+        """Load contract addresses from deployment file."""
+        deployment_file = f'deployments/{self.network}.json'
+        if not os.path.exists(deployment_file):
+             # Fallback to root deployment.json for backwards compatibility with original demo
+            deployment_file = 'deployment.json'
+
         try:
-            with open('deployment.json', 'r') as f:
+            with open(deployment_file, 'r') as f:
                 deployment = json.load(f)
                 contracts = deployment['contracts']
                 
-                self.identity_registry_address = contracts['identity_registry']
-                self.reputation_registry_address = contracts['reputation_registry']
-                self.validation_registry_address = contracts['validation_registry']
+                self.identity_registry_address = self.w3.to_checksum_address(contracts['identity_registry'])
+                self.reputation_registry_address = self.w3.to_checksum_address(contracts['reputation_registry'])
+                self.validation_registry_address = self.w3.to_checksum_address(contracts['validation_registry'])
         except FileNotFoundError:
             raise FileNotFoundError(
-                "deployment.json not found. Please run 'python scripts/deploy.py' first."
+                f"{deployment_file} not found. Please ensure deployments are available."
             )
     
     def _load_contract_abi(self, contract_name: str) -> list:

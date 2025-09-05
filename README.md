@@ -4,7 +4,7 @@
 
 This example showcases how AI agents can interact trustlessly across organizational boundaries using the [ERC-8004 registry system](https://github.com/ChaosChain/trustless-agents-erc-ri), demonstrating the future of decentralized AI collaboration.
 
-## 🎯 What This Example Demonstrates
+## What This Example Demonstrates
 
 - **✅ ERC-8004 Registry Contracts**: Identity, Reputation, and Validation registries
 - **✅ AI Agents**: Using CrewAI for sophisticated market analysis and validation
@@ -36,7 +36,7 @@ This example showcases how AI agents can interact trustlessly across organizatio
                     └─────────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -86,7 +86,7 @@ This example showcases how AI agents can interact trustlessly across organizatio
 python demo.py
 ```
 
-## 📋 What Happens in the Demo
+## What Happens in the Demo
 
 ### Step 1: Contract Deployment
 - Deploys the three ERC-8004 registry contracts
@@ -128,7 +128,7 @@ python demo.py
 - Complete blockchain-based audit trail
 - Full transparency and accountability
 
-## 🤖 AI Agent Details
+## AI Agent Details
 
 ### Server Agent (Alice)
 - **Role**: Market Analysis Service Provider
@@ -146,7 +146,7 @@ python demo.py
   - Comprehensive scoring (0-100)
   - Detailed feedback and improvement recommendations
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 erc-8004-example/
@@ -180,7 +180,7 @@ erc-8004-example/
 └── validations/            # Generated validation data (created at runtime)
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables (.env)
 
@@ -210,7 +210,7 @@ The example works with any EVM-compatible network:
 
 Simply update the `RPC_URL` and `CHAIN_ID` in your `.env` file.
 
-## 🎓 Learning Outcomes
+## Learning Outcomes
 
 After running this example, you'll understand:
 
@@ -219,7 +219,7 @@ After running this example, you'll understand:
 3. **Blockchain Integration**: Smart contract interaction patterns
 4. **Trust Models**: How agents build reputation without pre-existing relationships
 
-## 🔍 Key Features Demonstrated
+## Key Features Demonstrated
 
 ### Trust Models
 - **Identity Registry**: Sovereign, portable agent identities
@@ -238,7 +238,7 @@ After running this example, you'll understand:
 - **Gas Optimization**: Efficient transaction patterns
 - **Multi-Network Support**: Works across EVM chains
 
-## 🛠️ Extending the Example
+## Extending the Example
 
 ### Adding New Agent Types
 
@@ -261,7 +261,7 @@ After running this example, you'll understand:
 3. **Implement proper monitoring** and logging
 4. **Add comprehensive error handling**
 
-## 🤝 Contributing
+## Contributing
 
 This example is designed to be educational and extensible. Contributions are welcome:
 
@@ -270,14 +270,14 @@ This example is designed to be educational and extensible. Contributions are wel
 3. **Additional trust models** and validation methods
 4. **Documentation** and tutorials
 
-## 📚 Additional Resources
+## Additional Resources
 
 - **ERC-8004 Specification**: https://eips.ethereum.org/EIPS/eip-8004
 - **CrewAI Documentation**: https://docs.crewai.com/
 - **A2A Protocol**: https://a2a-protocol.org/
 - **Foundry Book**: https://book.getfoundry.sh/
 
-## ⚠️ Important Notes
+## Important Notes
 
 - **Demo Purpose**: This is an educational example, not production-ready code
 - **Security**: Use proper key management in production environments
@@ -287,7 +287,7 @@ This example is designed to be educational and extensible. Contributions are wel
   - Without API keys: Intelligent fallback analysis (still demonstrates all ERC-8004 features)
 - **Network Requirements**: Requires a running blockchain (Anvil recommended for local testing)
 
-## 🎉 Success Metrics
+## Success Metrics
 
 When you run this example successfully, you'll see:
 

@@ -1,307 +1,138 @@
-# ERC-8004 Trustless Agents Example
+# ChaosChain Genesis Studio
 
-**A complete demonstration of the [ERC-8004 Trustless Agents](https://eips.ethereum.org/EIPS/eip-8004) standard with AI Agents.**
+**The first end-to-end commercial prototype for the on-chain agent economy.**
 
-This example showcases how AI agents can interact trustlessly across organizational boundaries using the [ERC-8004 registry system](https://github.com/ChaosChain/trustless-agents-erc-ri), demonstrating the future of decentralized AI collaboration.
+This repository demonstrates the full lifecycle of autonomous commerce, powered by the ChaosChain protocol vision. See AI agents establish on-chain identity via ERC-8004, perform verifiable work, receive direct payments in USDC on Base Sepolia, and lay the foundation for long-term IP monetization.
 
-## What This Example Demonstrates
 
-- **✅ ERC-8004 Registry Contracts**: Identity, Reputation, and Validation registries
-- **✅ AI Agents**: Using CrewAI for sophisticated market analysis and validation
-- **✅ Trustless Interactions**: Agents discover, validate, and provide feedback without pre-existing trust
-- **✅ Complete Audit Trail**: Full blockchain-based accountability and transparency
-- **✅ Multi-Agent Workflows**: Collaborative AI systems working together
+## The Vision: From Verifiable Work to Monetizable IP
 
-## 🏗️ Architecture Overview
+This is more than just an example of ERC-8004. It's a working blueprint for a new economy where AI agents can:
+1.  **Work:** Perform complex tasks and generate valuable data.
+2.  **Verify:** Have their work audited and proven on-chain.
+3.  **Settle:** Receive direct, programmatic payment for their services in stablecoins.
+4.  **Own:** Convert their verified work into new, royalty-bearing IP assets.
 
+This demo showcases the core loop that will power the ChaosChain protocol and its future ecosystem of specialized "Studios."
+
+## Architecture: The Full Commercial Loop
+
+This prototype integrates a best-in-class stack to demonstrate a complete, trustless commercial workflow.
+
+```mermaid
+graph TD
+    subgraph "Phase 1: Identity"
+        A[Agent Wallets via Coinbase Agent Kit] --> B{ERC-8004 IdentityRegistry};
+    end
+
+    subgraph "Phase 2: Work & Payment (Base Sepolia)"
+        C["Charlie (Client)"] --step 1. Requests Work --> D["Alice (Server)"];
+        D -- step 2. Performs Work --> E[Stores Evidence on IPFS via Pinata];
+        E -- step 3. Submits for Validation --> F["Bob (Validator)"];
+        F -- step 4. Validates Work --> G{ERC-8004 ValidationRegistry};
+        G -- step 5. Triggers Payment --> H[USDC Transfer];
+        C -- step 6. Pays --> H;
+        H -- step 7. Alice gets Paid --> D;
+    end
+
+    subgraph "Phase 3: IP Monetization"
+        D -- step 8. Registers Verified Work --> I[Crossmint API];
+        I -- step 9. Mints IP Asset --> J{Story Protocol};
+    end
+
+    style B fill:#50fa7b,stroke:#282a36,color:#282a36
+    style G fill:#50fa7b,stroke:#282a36,color:#282a36
+    style H fill:#8be9fd,stroke:#282a36,color:#282a36
+    style J fill:#ffb86c,stroke:#282a36,color:#282a36
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Server Agent  │    │ Validator Agent │    │  Client Agent   │
-│    (Alice)      │    │     (Bob)       │    │   (Charlie)     │
-│                 │    │                 │    │                 │
-│ • Market        │    │ • Valdidation   │    │ • Feedback      │
-│   Analysis      │                      │    │   Authorization │
-│ • Multi-agent   │    │ • Quality       │    │ • Reputation    │
-│   workflows     │    │   Assessment    │    │   Management    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────────┐
-                    │  ERC-8004 Registries│
-                    │                     │
-                    │ • Identity Registry │
-                    │ • Reputation Registry│
-                    │ • Validation Registry│
-                    └─────────────────────┘
-```
+
+### Core Technologies
+-   **🤖 Agent Wallets:** [Coinbase Agent Kit](https://docs.cdp.coinbase.com/agent-kit/overview) for secure, server-side EOA management.
+-   **📜 On-Chain Standard:** Our official [ERC-8004 Reference Implementation](https://github.com/ChaosChain/trustless-agents-erc-ri) for identity and validation.
+-   **🧠 AI Engine:** [CrewAI](https://www.crewai.com/) for sophisticated, multi-agent workflows.
+-   **☁️ Decentralized Storage:** [IPFS](https://ipfs.tech/) via [Pinata](https://www.pinata.cloud/) for permanent, verifiable evidence storage.
+-   **💸 Payments:** Official **USDC** on **Base Sepolia** for realistic, on-chain settlement.
+-   **🎨 IP Layer:** [Story Protocol](https://www.story.foundation/) via [Crossmint API](https://docs.crossmint.com/solutions/story-protocol/introduction) for turning work into monetizable IP.
+
+---
 
 ## Quick Start
 
 ### Prerequisites
-
-1. **Python 3.8+** with pip
-2. **Node.js 16+** with npm (for Foundry)
-3. **Foundry** (for smart contracts)
+1.  **Python 3.8+** with `pip`.
+2.  **API Keys & Endpoints:**
+    -   A **Base Sepolia RPC URL**.
+    -   An **Operator Private Key** (a fresh wallet with Base Sepolia ETH for gas).
+    -   A **Pinata JWT** for IPFS uploads.
+    -   A **Crossmint API Key** for the Story Protocol integration.
 
 ### Installation
 
-1. **Clone and setup the example:**
-   ```bash
-   git clone https://github.com/chaoschain/erc-8004-example.git
-   cd erc-8004-example
-   
-   # Option 1: Automated setup (recommended)
-   ./setup.sh
-   
-   # Option 2: Manual setup
-   pip install -r requirements.txt
-   curl -L https://foundry.paradigm.xyz | bash
-   foundryup
-   ```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/ChaosChain/chaoschain-genesis-studio.git
+    cd chaoschain-genesis-studio
+    ```
 
-2. **Compile the smart contracts:**
-   ```bash
-   cd contracts
-   forge install
-   forge build
-   cd ..
-   ```
+2.  **Install Python dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-3. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Start a local blockchain (optional):**
-   ```bash
-   # In a separate terminal
-   anvil
-   ```
+3.  **Configure your environment:**
+    ```bash
+    cp .env.example .env
+    ```
+    Now, edit the `.env` file and add your RPC URL, private key, and API keys.
 
 ### Run the Demo
 
+Execute the entire end-to-end flow with a single command:
 ```bash
-python demo.py
+python genesis_studio.py
 ```
-
-## What Happens in the Demo
-
-### Step 1: Contract Deployment
-- Deploys the three ERC-8004 registry contracts
-- Creates a complete trustless infrastructure
-
-### Step 2: Agent Initialization
-- **Alice (Server Agent)**: Market analysis service 
-- **Bob (Validator Agent)**: Analysis validation service   
-- **Charlie (Client Agent)**: Feedback and reputation management
-
-### Step 3: Agent Registration
-- All agents register with the Identity Registry
-- Receive unique on-chain identities and agent IDs
-
-### Step 4: Market Analysis Workflow
-- Alice performs comprehensive BTC market analysis 
-- Multi-agent workflow with analyst and reviewer roles
-- Generates structured analysis with recommendations
-
-### Step 5: Validation Request
-- Alice submits her analysis for validation by Bob
-- Creates cryptographic hash of the work
-- Stores analysis data for validator access
-
-### Step 6: AI-Powered Validation
-- Bob validates Alice's analysis 
-- Multi-agent validation with validator and QA specialist roles
-- Generates validation score and detailed feedback
-
-### Step 7: Validation Response
-- Bob submits validation score (0-100) on-chain
-- Creates permanent, immutable validation record
-
-### Step 8: Feedback Authorization
-- Charlie authorizes feedback for Alice's services
-- Enables reputation building and trust networks
-
-### Step 9: Audit Trail
-- Complete blockchain-based audit trail
-- Full transparency and accountability
-
-## AI Agent Details
-
-### Server Agent (Alice)
-- **Role**: Market Analysis Service Provider
-- **Capabilities**:
-  - Senior Market Analyst for trend identification
-  - Risk Assessment Specialist for validation
-  - Structured analysis with confidence scores
-  - Professional reporting standards
-
-### Validator Agent (Bob)
-- **Role**: Analysis Validation Service
-- **Capabilities**:
-  - Senior Analysis Validator for methodology review
-  - Quality Assurance Specialist for final assessment
-  - Comprehensive scoring (0-100)
-  - Detailed feedback and improvement recommendations
-
-## Project Structure
-
-```
-erc-8004-example/
-├── README.md                 # This file
-├── requirements.txt          # Python dependencies
-├── .env.example             # Environment configuration template
-├── demo.py                  # Main demonstration script
-├── setup.sh                 # Automated setup script
-├── SUMMARY.md               # Project summary
-├── ERC-XXXX Trustless Agents v0.3.md  # ERC specification
-│
-├── contracts/               # Smart contracts
-│   ├── src/                # Contract source code
-│   │   ├── IdentityRegistry.sol
-│   │   ├── ReputationRegistry.sol
-│   │   ├── ValidationRegistry.sol
-│   │   └── interfaces/     # Contract interfaces
-│   ├── out/                # Compiled artifacts (ABIs)
-│   ├── script/             # Deployment scripts
-│   └── foundry.toml        # Foundry configuration
-│
-├── agents/                  # AI agent implementations
-│   ├── __init__.py
-│   ├── base_agent.py       # Base ERC-8004 agent class
-│   ├── server_agent.py     # Market analysis server agent
-│   └── validator_agent.py  # Analysis validation agent
-│
-├── scripts/                # Utility scripts
-│   └── deploy.py           # Contract deployment script
-├── data/                   # Generated analysis data (created at runtime)
-└── validations/            # Generated validation data (created at runtime)
-```
-
-## Configuration
-
-### Environment Variables (.env)
-
-```bash
-# Blockchain Configuration
-RPC_URL=http://127.0.0.1:8545        # Local Anvil
-PRIVATE_KEY=0x0000000000000000000000000000000000000000000000000000000000000000
-CHAIN_ID=31337
-
-# Agent Domains (optional)
-AGENT_DOMAIN_ALICE=alice.example.com
-AGENT_DOMAIN_BOB=bob.example.com
-
-# AI Configuration (optional - for enhanced AI features)
-# The demo works without these, using fallback analysis
-# OPENAI_API_KEY=your_openai_api_key_here
-# ANTHROPIC_API_KEY=your_anthropic_api_key_here
-```
-
-### Network Support
-
-The example works with any EVM-compatible network:
-
-- **Local Development**: Anvil/Hardhat (default)
-- **Testnets**: Sepolia, Goerli, Base Sepolia
-- **Mainnets**: Ethereum, Base, Arbitrum, Optimism
-
-Simply update the `RPC_URL` and `CHAIN_ID` in your `.env` file.
-
-## Learning Outcomes
-
-After running this example, you'll understand:
-
-1. **ERC-8004 Standard**: How trustless agent interactions work
-2. **Registry Architecture**: Identity, reputation, and validation systems
-3. **Blockchain Integration**: Smart contract interaction patterns
-4. **Trust Models**: How agents build reputation without pre-existing relationships
-
-## Key Features Demonstrated
-
-### Trust Models
-- **Identity Registry**: Sovereign, portable agent identities
-- **Reputation Registry**: Decentralized feedback and rating systems
-- **Validation Registry**: Cryptoeconomic validation mechanisms
-
-### AI Capabilities
-- **Multi-Agent Workflows**: Collaborative AI systems
-- **Structured Analysis**: Professional-grade market analysis
-- **Quality Validation**: AI-powered validation and scoring
-- **Continuous Learning**: Agents improve through feedback
-
-### Blockchain Integration
-- **Smart Contract Interaction**: Seamless Web3 integration
-- **Event Monitoring**: Real-time blockchain event handling
-- **Gas Optimization**: Efficient transaction patterns
-- **Multi-Network Support**: Works across EVM chains
-
-## Extending the Example
-
-### Adding New Agent Types
-
-1. **Create a new agent class** inheriting from `ERC8004BaseAgent`
-2. **Implement AI workflows** for your specific use case
-3. **Define trust models** your agent supports
-4. **Update the demo script** to include your agent
-
-### Integrating with Real APIs
-
-1. **Replace mock data** in `MarketAnalysisTool` with real API calls
-2. **Add authentication** for external services
-3. **Implement error handling** for network failures
-4. **Add rate limiting** for API usage
-
-### Deploying to Production
-
-1. **Use secure key management** (not hardcoded private keys)
-2. **Deploy to testnets first** for validation
-3. **Implement proper monitoring** and logging
-4. **Add comprehensive error handling**
-
-## Contributing
-
-This example is designed to be educational and extensible. Contributions are welcome:
-
-1. **Bug fixes** and improvements
-2. **New agent types** and use cases
-3. **Additional trust models** and validation methods
-4. **Documentation** and tutorials
-
-## Additional Resources
-
-- **ERC-8004 Specification**: https://eips.ethereum.org/EIPS/eip-8004
-- **CrewAI Documentation**: https://docs.crewai.com/
-- **A2A Protocol**: https://a2a-protocol.org/
-- **Foundry Book**: https://book.getfoundry.sh/
-
-## Important Notes
-
-- **Demo Purpose**: This is an educational example, not production-ready code
-- **Security**: Use proper key management in production environments
-- **Gas Costs**: Monitor transaction costs on mainnet deployments
-- **AI Functionality**: Demo works fully without API keys using fallback analysis
-  - With API keys: Full AI-powered analysis via CrewAI + LLMs
-  - Without API keys: Intelligent fallback analysis (still demonstrates all ERC-8004 features)
-- **Network Requirements**: Requires a running blockchain (Anvil recommended for local testing)
-
-## Success Metrics
-
-When you run this example successfully, you'll see:
-
-- ✅ All contracts deployed and verified
-- ✅ Three agents registered with unique IDs (Alice: Server, Bob: Validator, Charlie: Client)
-- ✅ Complete market analysis generated by AI (BTC analysis with trend, support/resistance levels)
-- ✅ Professional validation with scoring (96-100/100 validation scores)
-- ✅ Full blockchain audit trail with transaction hashes
-- ✅ Trustless agent interactions demonstrated across 7 steps
-
-**Expected Output**: The demo runs through all 7 steps, showing real multi-agent workflows performing market analysis and validation, even without external API keys (using intelligent fallback analysis).
-
-This example proves that sophisticated AI agents can work together trustlessly, laying the foundation for a decentralized agent economy!
 
 ---
 
-**Built with ❤️ for the ERC-8004 Trustless Agents standard** 
+## The Commercial Lifecycle in Action
+
+The demo script executes a complete, four-phase commercial workflow:
+
+### Phase 1: Setup & On-Chain Identity
+-   Initializes secure wallets for the three agents (Alice, Bob, Charlie) using Coinbase Agent Kit.
+-   Connects to the Base Sepolia testnet.
+-   Each agent registers itself on the live ERC-8004 `IdentityRegistry` contract, receiving a unique, on-chain `AgentID`.
+
+### Phase 2: Verifiable Work & Payment
+-   **Alice (Server)** performs a sophisticated market analysis for BTC using a CrewAI workflow.
+-   The resulting analysis report is uploaded and pinned to **IPFS** via Pinata.
+-   **Bob (Validator)** retrieves the analysis from IPFS and performs a validation, submitting his score on-chain to the ERC-8004 `ValidationRegistry`.
+-   **Charlie (Client)** reads the validation score and programmatically pays Alice in **USDC** via a direct on-chain transaction.
+
+### Phase 3: IP Monetization Flywheel
+-   Upon successful payment, the script triggers the ChaosChain IP monetization loop.
+-   It uses the **Crossmint API** to register Alice's verified analysis as a new **IP Asset on Story Protocol**.
+-   This action assigns ownership of the new IP to Alice's agent wallet, making it a new, potentially royalty-bearing asset.
+
+---
+
+## Live Demo Output
+
+The following is a sample output from a successful run, providing a complete, verifiable audit trail on public infrastructure.
+
+| Component             | Status     | Details                                            | Transaction/Link                                                                                              |
+| --------------------- | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **🤖 Agent Registration** | ✅ Success | Alice, Bob, Charlie registered with on-chain IDs   | ERC-8004 on Base Sepolia                                                                                      |
+| **📂 Evidence Storage**   | ✅ Success | Analysis & Validation reports stored             | [View on IPFS](https://gateway.pinata.cloud/ipfs/QmRSdPdvfmS2m6S6QBUfEej3wJCekAJsvBSnbxSHHHGEGT)                                        |
+| **💸 USDC Payment**      | ✅ Success | 1 USDC: Charlie → Alice                            | [View on BaseScan](https://sepolia.basescan.org/tx/0x6f825e665c714d49bad76169b6fc501097fbf13f4fc68bdab0041bfc77c74a42)                                      |
+| **🎨 IP Registration**   | 🚧 Pending | Story Protocol integration is being finalized    | Crossmint API (Next Step)                                                                                     |
+
+---
+
+## Contributing & Next Steps
+
+This prototype is the first step towards the full ChaosChain vision. The immediate next step is to finalize the Story Protocol integration.
+
+Contributions, bug reports, and ideas are highly welcome. Please open an issue or submit a pull request.
+
+**Built with ❤️ for the future of autonomous commerce.**

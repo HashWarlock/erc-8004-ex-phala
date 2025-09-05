@@ -387,6 +387,12 @@ class GenesisStudioOrchestrator:
         
         return tx_hash
     
+    def _format_tx_hash(self, tx_hash: str) -> str:
+        """Ensure transaction hash has 0x prefix for explorer links"""
+        if tx_hash == "N/A" or tx_hash.startswith("0x"):
+            return tx_hash
+        return f"0x{tx_hash}"
+    
     def _register_analysis_ip(self) -> Dict[str, Any]:
         """Register Alice's analysis as IP on Story Protocol"""
         
@@ -564,7 +570,7 @@ The complete lifecycle of trustless agentic commerce has been demonstrated:
         )
         
         # USDC Payment Results  
-        payment_tx = self.results.get("payment_transaction", "N/A")
+        payment_tx = self.results.get("payment", {}).get("tx_hash", "N/A")
         payment_status = "[green]✅ SUCCESS[/green]" if payment_tx != "N/A" and "0x123" not in payment_tx else "[yellow]⚠️ SIMULATED[/yellow]"
         table.add_row(
             "💸 USDC Payment",
@@ -588,9 +594,9 @@ The complete lifecycle of trustless agentic commerce has been demonstrated:
         links_panel = Panel(
             f"""[bold cyan]🔗 Live Transaction Links (Base Sepolia):[/bold cyan]
 
-[yellow]Validation Request:[/yellow] https://sepolia.basescan.org/tx/{self.results.get('validation_request_tx', 'N/A')}
-[yellow]Validation Response:[/yellow] https://sepolia.basescan.org/tx/{self.results.get('validation_response_tx', 'N/A')}  
-[yellow]USDC Payment:[/yellow] {"Simulated due to low balance" if "0x123" in str(payment_tx) else f"https://sepolia.basescan.org/tx/{payment_tx}"}
+[yellow]Validation Request:[/yellow] https://sepolia.basescan.org/tx/{self._format_tx_hash(self.results.get('validation_request_tx', 'N/A'))}
+[yellow]Validation Response:[/yellow] https://sepolia.basescan.org/tx/{self._format_tx_hash(self.results.get('validation_response_tx', 'N/A'))}  
+[yellow]USDC Payment:[/yellow] {"Simulated due to low balance" if "0x123" in str(payment_tx) else f"https://sepolia.basescan.org/tx/{self._format_tx_hash(payment_tx)}"}
 
 [bold green]🎯 Key Achievements:[/bold green]
 • Real on-chain agent identities with ERC-8004 ✅

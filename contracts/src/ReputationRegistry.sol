@@ -6,11 +6,16 @@ import "./interfaces/IIdentityRegistry.sol";
 
 /**
  * @title ReputationRegistry
- * @dev Implementation of the Reputation Registry for ERC-XXXX Trustless Agents v0.3
+ * @dev Implementation of the Reputation Registry for ERC-8004 Trustless Agents
  * @notice Lightweight entry point for task feedback between agents
  * @author ChaosChain Labs
  */
 contract ReputationRegistry is IReputationRegistry {
+    // ============ Constants ============
+    
+    /// @dev Contract version for tracking implementation changes
+    string public constant VERSION = "1.0.0";
+    
     // ============ State Variables ============
     
     /// @dev Reference to the IdentityRegistry for agent validation
@@ -49,10 +54,15 @@ contract ReputationRegistry is IReputationRegistry {
         // Get server agent info to check authorization
         IIdentityRegistry.AgentInfo memory serverAgent = identityRegistry.getAgent(agentServerId);
         
-        // Only the server agent can authorize feedback
-        if (msg.sender != serverAgent.agentAddress) {
-            revert UnauthorizedFeedback();
-        }
+            // Only the server agent can authorize feedback
+    if (msg.sender != serverAgent.agentAddress) {
+        revert UnauthorizedFeedback();
+    }
+    
+    // SECURITY: Prevent self-feedback to maintain integrity
+    if (agentClientId == agentServerId) {
+        revert SelfFeedbackNotAllowed();
+    }
         
         // Check if feedback is already authorized
         bytes32 existingAuthId = _clientServerToAuthId[agentClientId][agentServerId];
@@ -105,14 +115,14 @@ contract ReputationRegistry is IReputationRegistry {
         uint256 agentClientId,
         uint256 agentServerId
     ) private view returns (bytes32 feedbackAuthId) {
-        // Include block timestamp and transaction hash for uniqueness
+        // Include block timestamp, prevrandao, and sender for uniqueness
         feedbackAuthId = keccak256(
             abi.encodePacked(
                 agentClientId,
                 agentServerId,
                 block.timestamp,
-                block.difficulty, // Use block.difficulty for additional entropy
-                tx.origin
+                block.prevrandao, // Use block.prevrandao for additional entropy (post-merge)
+                msg.sender // Use msg.sender for meta-transaction compatibility
             )
         );
     }

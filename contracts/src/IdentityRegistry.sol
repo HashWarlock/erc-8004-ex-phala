@@ -5,15 +5,15 @@ import "./interfaces/IIdentityRegistry.sol";
 
 /**
  * @title IdentityRegistry
- * @dev Implementation of the Identity Registry for ERC-XXXX Trustless Agents v0.3
+ * @dev Implementation of the Identity Registry for ERC-8004 Trustless Agents
  * @notice Central registry for all agent identities with spam protection
  * @author ChaosChain Labs
  */
 contract IdentityRegistry is IIdentityRegistry {
     // ============ Constants ============
     
-    /// @dev Registration fee of 0.005 ETH that gets burned
-    uint256 public constant REGISTRATION_FEE = 0.005 ether;
+    /// @dev Contract version for tracking implementation changes
+    string public constant VERSION = "1.0.0";
 
     // ============ State Variables ============
     
@@ -44,10 +44,10 @@ contract IdentityRegistry is IIdentityRegistry {
     function newAgent(
         string calldata agentDomain, 
         address agentAddress
-    ) external payable returns (uint256 agentId) {
-        // Validate fee
-        if (msg.value != REGISTRATION_FEE) {
-            revert InsufficientFee();
+    ) external returns (uint256 agentId) {
+        // SECURITY: Only allow registration of own address to prevent impersonation
+        if (msg.sender != agentAddress) {
+            revert UnauthorizedRegistration();
         }
         
         // Validate inputs
@@ -58,8 +58,11 @@ contract IdentityRegistry is IIdentityRegistry {
             revert InvalidAddress();
         }
         
-        // Check for duplicates
-        if (_domainToAgentId[agentDomain] != 0) {
+        // SECURITY: Normalize domain to lowercase to prevent case-variance bypass
+        string memory normalizedDomain = _toLowercase(agentDomain);
+        
+        // Check for duplicates using normalized domain
+        if (_domainToAgentId[normalizedDomain] != 0) {
             revert DomainAlreadyRegistered();
         }
         if (_addressToAgentId[agentAddress] != 0) {
@@ -69,19 +72,18 @@ contract IdentityRegistry is IIdentityRegistry {
         // Assign new agent ID
         agentId = _agentIdCounter++;
         
-        // Store agent info
+        // Store agent info with original domain (for display) but use normalized for lookups
         _agents[agentId] = AgentInfo({
             agentId: agentId,
-            agentDomain: agentDomain,
+            agentDomain: agentDomain, // Store original case for display
             agentAddress: agentAddress
         });
         
-        // Create lookup mappings
-        _domainToAgentId[agentDomain] = agentId;
+        // Create lookup mappings using normalized domain
+        _domainToAgentId[normalizedDomain] = agentId;
         _addressToAgentId[agentAddress] = agentId;
         
-        // Burn the registration fee by not forwarding it anywhere
-        // The ETH stays locked in this contract forever
+
         
         emit AgentRegistered(agentId, agentDomain, agentAddress);
     }
@@ -110,7 +112,9 @@ contract IdentityRegistry is IIdentityRegistry {
         
         // Validate new values if provided
         if (domainChanged) {
-            if (_domainToAgentId[newAgentDomain] != 0) {
+            // SECURITY: Normalize new domain for consistent checking
+            string memory normalizedNewDomain = _toLowercase(newAgentDomain);
+            if (_domainToAgentId[normalizedNewDomain] != 0) {
                 revert DomainAlreadyRegistered();
             }
         }
@@ -123,11 +127,14 @@ contract IdentityRegistry is IIdentityRegistry {
         
         // Update domain if provided
         if (domainChanged) {
-            // Remove old domain mapping
-            delete _domainToAgentId[agent.agentDomain];
-            // Set new domain
-            agent.agentDomain = newAgentDomain;
-            _domainToAgentId[newAgentDomain] = agentId;
+            // SECURITY: Remove old domain mapping using normalized version
+            string memory oldNormalizedDomain = _toLowercase(agent.agentDomain);
+            delete _domainToAgentId[oldNormalizedDomain];
+            
+            // SECURITY: Add new domain mapping using normalized version
+            string memory normalizedNewDomain = _toLowercase(newAgentDomain);
+            agent.agentDomain = newAgentDomain; // Store original case for display
+            _domainToAgentId[normalizedNewDomain] = agentId;
         }
         
         // Update address if provided
@@ -159,7 +166,9 @@ contract IdentityRegistry is IIdentityRegistry {
      * @inheritdoc IIdentityRegistry
      */
     function resolveByDomain(string calldata agentDomain) external view returns (AgentInfo memory agentInfo) {
-        uint256 agentId = _domainToAgentId[agentDomain];
+        // SECURITY: Normalize domain for lookup to prevent case-variance bypass
+        string memory normalizedDomain = _toLowercase(agentDomain);
+        uint256 agentId = _domainToAgentId[normalizedDomain];
         if (agentId == 0) {
             revert AgentNotFound();
         }
@@ -193,6 +202,24 @@ contract IdentityRegistry is IIdentityRegistry {
 
     // ============ Internal Functions ============
     
-    // Note: Registration fee is burned by keeping it locked in this contract
-    // This is more gas-efficient than transferring to address(0)
+    /**
+     * @dev Converts a string to lowercase to prevent case-variance bypass attacks
+     * @param str The input string to convert
+     * @return result The lowercase version of the input string
+     */
+    function _toLowercase(string memory str) internal pure returns (string memory result) {
+        bytes memory strBytes = bytes(str);
+        bytes memory resultBytes = new bytes(strBytes.length);
+        
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            // Convert A-Z to a-z
+            if (strBytes[i] >= 0x41 && strBytes[i] <= 0x5A) {
+                resultBytes[i] = bytes1(uint8(strBytes[i]) + 32);
+            } else {
+                resultBytes[i] = strBytes[i];
+            }
+        }
+        
+        result = string(resultBytes);
+    }
 }

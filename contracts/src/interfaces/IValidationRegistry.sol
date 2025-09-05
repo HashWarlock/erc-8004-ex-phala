@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 /**
  * @title IValidationRegistry
- * @dev Interface for the Validation Registry as defined in ERC-XXXX Trustless Agents v0.3
+ * @dev Interface for the Validation Registry as defined in ERC-8004 Trustless Agents
  * @notice This contract provides hooks for requesting and recording independent validation
  */
 interface IValidationRegistry {
@@ -50,6 +50,7 @@ interface IValidationRegistry {
     error RequestExpired();
     error InvalidResponse();
     error InvalidDataHash();
+    error SelfValidationNotAllowed();
 
     // ============ Write Functions ============
     
@@ -100,8 +101,8 @@ interface IValidationRegistry {
     function getValidationResponse(bytes32 dataHash) external view returns (bool hasResponse, uint8 response);
     
     /**
-     * @dev Get the expiration time for validation requests
-     * @return slots Number of storage slots a request remains valid
+     * @dev Get the expiration time for validation requests (in seconds)
+     * @return slots Number of seconds after which requests expire
      */
     function getExpirationSlots() external view returns (uint256 slots);
 }

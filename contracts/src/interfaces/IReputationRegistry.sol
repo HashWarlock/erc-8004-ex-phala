@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 /**
  * @title IReputationRegistry
- * @dev Interface for the Reputation Registry as defined in ERC-XXXX Trustless Agents v0.3
+ * @dev Interface for the Reputation Registry as defined in ERC-8004 Trustless Agents
  * @notice This contract provides a lightweight entry point for task feedback between agents
  */
 interface IReputationRegistry {
@@ -24,6 +24,7 @@ interface IReputationRegistry {
     error UnauthorizedFeedback();
     error FeedbackAlreadyAuthorized();
     error InvalidAgentId();
+    error SelfFeedbackNotAllowed();
 
     // ============ Write Functions ============
     

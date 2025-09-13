@@ -12,4 +12,7 @@ rich>=13.7.0
 cdp-sdk>=0.0.7
 
 # Genesis Studio - IPFS Storage via Pinata (using requests for API calls)
-# No separate pinata package needed - we'll use requests directly 
+# No separate pinata package needed - we'll use requests directly
+
+# Genesis Studio - x402 Payment Protocol Integration
+x402>=0.2.1 

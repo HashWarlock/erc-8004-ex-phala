@@ -171,6 +171,30 @@ class GenesisIPFSManager:
             return data
         return None
     
+    def store_generic_evidence(self, evidence_data: Dict[str, Any], agent_id: int, evidence_type: str) -> Optional[str]:
+        """Store generic evidence on IPFS"""
+        
+        # Add metadata
+        report = {
+            "type": f"evidence_{evidence_type}",
+            "agent_id": agent_id,
+            "evidence_type": evidence_type,
+            "timestamp": evidence_data.get("timestamp"),
+            "evidence": evidence_data,
+            "genesis_studio_version": "1.0.0"
+        }
+        
+        filename = f"evidence_{evidence_type}_agent_{agent_id}_{evidence_data.get('timestamp', 'unknown')}.json"
+        return self.storage.upload_json(report, filename)
+    
+    def retrieve_generic_evidence(self, cid: str) -> Optional[Dict[str, Any]]:
+        """Retrieve generic evidence from IPFS"""
+        
+        data = self.storage.retrieve_json(cid)
+        if data and data.get("type", "").startswith("evidence_"):
+            return data
+        return None
+    
     def get_clickable_link(self, cid: str) -> str:
         """Get a clickable IPFS gateway link"""
         return self.storage.get_gateway_url(cid)

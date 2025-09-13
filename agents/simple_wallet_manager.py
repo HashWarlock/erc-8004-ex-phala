@@ -99,7 +99,14 @@ class GenesisWalletManager:
     def transfer_usdc(self, from_agent: str, to_agent: str, amount: float) -> Optional[str]:
         """Transfer USDC between agent wallets (simplified implementation)"""
         from_wallet = self.wallets.get(from_agent)
-        to_address = self.get_wallet_address(to_agent)
+        
+        # Handle direct addresses vs agent names
+        if to_agent.startswith('0x') and len(to_agent) == 42:
+            # Direct address provided
+            to_address = to_agent
+        else:
+            # Agent name provided, get wallet address
+            to_address = self.get_wallet_address(to_agent)
         
         if not from_wallet:
             rprint(f"[red]❌ Wallet not found for {from_agent}")

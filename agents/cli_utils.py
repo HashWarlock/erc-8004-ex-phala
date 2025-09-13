@@ -130,6 +130,29 @@ class GenesisStudioCLI:
         self.console.print(panel)
         self.console.print()
     
+    def print_x402_payment(self, from_agent: str, to_agent: str, amount: float, tx_hash: str, service_description: str):
+        """Display x402 payment success"""
+        table = Table(show_header=False, box=None, padding=(0, 1))
+        table.add_column("Field", style="cyan")
+        table.add_column("Value", style="white")
+        
+        table.add_row("From:", f"[yellow]{from_agent}[/yellow]")
+        table.add_row("To:", f"[yellow]{to_agent}[/yellow]")
+        table.add_row("Amount:", f"[bold green]{amount} USDC[/bold green]")
+        table.add_row("Service:", f"[blue]{service_description}[/blue]")
+        table.add_row("Protocol:", f"[magenta]x402 (HTTP 402)[/magenta]")
+        table.add_row("Transaction:", f"[link=https://sepolia.basescan.org/tx/{tx_hash}]{tx_hash}[/link]")
+        table.add_row("Receipt:", f"[dim]✅ Cryptographic proof generated[/dim]")
+        
+        panel = Panel(
+            table,
+            title="[bold cyan]💳 x402 Payment Successful[/bold cyan]",
+            border_style="cyan"
+        )
+        
+        self.console.print(panel)
+        self.console.print()
+    
     def print_story_protocol_registration(self, title: str, asset_id: str, creator: str, story_url: str):
         """Display Story Protocol IP registration success"""
         table = Table(show_header=False, box=None, padding=(0, 1))

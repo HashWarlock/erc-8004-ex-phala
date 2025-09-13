@@ -197,3 +197,5 @@ validations/*.json
 !validations/.gitkeep 
 
 data
+
+genesis_wallets.json

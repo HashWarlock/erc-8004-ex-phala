@@ -515,8 +515,18 @@ class GenesisStudioX402Orchestrator:
         data_hash = "0x" + hashlib.sha256(analysis_cid.encode()).hexdigest()
         
         try:
+            # Check if Bob is registered and has an agent ID
+            bob_agent_id = self.bob_sdk.get_agent_id()
+            alice_agent_id = self.alice_sdk.get_agent_id()
+            
+            if bob_agent_id is None or alice_agent_id is None:
+                rprint(f"[yellow]⚠️  Agents not registered yet. Using fallback validation...[/yellow]")
+                # Use placeholder IDs for demo purposes
+                bob_agent_id = 2  # Assume Bob is agent ID 2
+                alice_agent_id = 1  # Assume Alice is agent ID 1
+            
             # Alice requests validation from Bob via ERC-8004
-            tx_hash = self.alice_sdk.request_validation(self.bob_sdk.get_agent_id(), data_hash)
+            tx_hash = self.alice_sdk.request_validation(bob_agent_id, data_hash)
             
             self.cli.print_validation_request("Bob", data_hash, tx_hash)
             

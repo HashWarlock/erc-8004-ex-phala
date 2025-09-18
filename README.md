@@ -176,10 +176,31 @@ graph TD
 
 ### Run the Demo
 
-Execute the entire end-to-end flow with a single command:
+**⚠️ IMPORTANT: Fund Wallets First**
+
+Before running the demo, you must fund the agent wallets with ETH for gas fees:
+
 ```bash
+# 1. Check wallet funding status
+python fix_and_run_demo.py
+
+# 2. Fund wallets using Base Sepolia faucet
+# Visit: https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet
+# Fund each address shown in the funding status table
+
+# 3. Run the demo (after funding)
 python genesis_studio.py
+
+# OR use the safe runner that checks funding first
+python fix_and_run_demo.py
 ```
+
+**Wallet Addresses (fund these with Base Sepolia ETH):**
+- Alice: `0xB7DE5621f92e3bE0eD0c846CAa37cA7939F63b31`
+- Bob: `0x5998610d644df828Aa8073f12CBb05337c8f3945`  
+- Charlie: `0x4E9970f764d2908C6922C834a60E8DF99fAc0d46`
+
+Each wallet needs at least **0.001 ETH** for gas fees.
 
 ---
 

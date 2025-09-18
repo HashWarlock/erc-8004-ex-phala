@@ -18,7 +18,7 @@ from web3 import Web3
 from eth_account import Account
 from rich import print as rprint
 
-from .simple_wallet_manager import GenesisWalletManager
+from .wallet_manager import GenesisWalletManager
 
 
 class GenesisX402PaymentManager:

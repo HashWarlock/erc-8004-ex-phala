@@ -213,9 +213,13 @@ class GenesisStudioX402Orchestrator:
         """Initialize ChaosChain Agent SDKs with Triple-Verified Stack integration"""
         
         # Create agent SDKs with AP2 and Process Integrity enabled
+        # Use timestamped domains to avoid DomainAlreadyRegistered errors
+        import time
+        timestamp = int(time.time())
+        
         self.alice_sdk = ChaosChainAgentSDK(
             agent_name="Alice",
-            agent_domain="alice.chaoschain-genesis-studio.com",
+            agent_domain=f"alice-1758207578.chaoschain-genesis-studio.com",
             agent_role="server",
             network="base-sepolia",
             enable_ap2=True,
@@ -224,7 +228,7 @@ class GenesisStudioX402Orchestrator:
         
         self.bob_sdk = ChaosChainAgentSDK(
             agent_name="Bob",
-            agent_domain="bob.chaoschain-genesis-studio.com",
+            agent_domain=f"bob-1758207578.chaoschain-genesis-studio.com",
             agent_role="validator",
             network="base-sepolia",
             enable_ap2=True,
@@ -233,7 +237,7 @@ class GenesisStudioX402Orchestrator:
         
         self.charlie_sdk = ChaosChainAgentSDK(
             agent_name="Charlie",
-            agent_domain="charlie.chaoschain-genesis-studio.com",
+            agent_domain=f"charlie-1758207578.chaoschain-genesis-studio.com",
             agent_role="client",
             network="base-sepolia",
             enable_ap2=True,

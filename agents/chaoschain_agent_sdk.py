@@ -16,7 +16,7 @@ from rich import print as rprint
 from .base_agent_genesis import GenesisBaseAgent
 from .server_agent_genesis import GenesisServerAgent
 from .validator_agent_genesis import GenesisValidatorAgent
-from .simple_wallet_manager import GenesisWalletManager
+from .wallet_manager import GenesisWalletManager
 from .ipfs_storage import GenesisIPFSManager
 from .x402_payment_manager import GenesisX402PaymentManager
 from .ap2_mandate_manager import GenesisAP2MandateManager

@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
 
 from agents.cli_utils import GenesisStudioCLI
-from agents.wallet_manager import GenesisWalletManager
+from agents.simple_wallet_manager import GenesisWalletManager
 from agents.ipfs_storage import GenesisIPFSManager
 from agents.server_agent_genesis import GenesisServerAgent
 

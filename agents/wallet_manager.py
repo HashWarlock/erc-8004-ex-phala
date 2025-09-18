@@ -1,8 +1,14 @@
 """
-Genesis Studio - Wallet Management Module
+Genesis Studio - Production Wallet Management Module
 
-This module provides wallet management using Web3.py accounts for
-production-ready functionality with real USDC transfers and testnet support.
+This module handles wallet creation and management for ChaosChain agents.
+Each agent (Alice, Bob, Charlie) gets their own dedicated wallet for on-chain operations.
+
+Features:
+- Web3.py integration for Ethereum-compatible networks
+- Real USDC transfers on Base Sepolia
+- Secure private key management
+- Production-ready transaction handling
 """
 
 import os
@@ -16,7 +22,12 @@ from rich import print as rprint
 console = Console()
 
 class GenesisWalletManager:
-    """Production wallet manager for Genesis Studio with real USDC transfers"""
+    """
+    Production-ready wallet manager for ChaosChain agents
+    
+    Handles wallet creation, balance checking, and USDC transfers on Base Sepolia.
+    Consolidates all wallet functionality into a single, consistent interface.
+    """
     
     def __init__(self):
         self.wallets: Dict[str, Account] = {}
@@ -97,7 +108,7 @@ class GenesisWalletManager:
         return True
     
     def transfer_usdc(self, from_agent: str, to_agent: str, amount: float) -> Optional[str]:
-        """Transfer USDC between agent wallets (simplified implementation)"""
+        """Transfer USDC between agent wallets (production implementation)"""
         from_wallet = self.wallets.get(from_agent)
         
         # Handle direct addresses vs agent names

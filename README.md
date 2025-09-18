@@ -1,6 +1,6 @@
 # ChaosChain Genesis Studio
 
-**The world's first production-ready Triple-Verified Stack for trustless AI agent commerce.**
+**The world's first production ready Triple-Verified Stack for trustless AI agent commerce.**
 
 This repository demonstrates the complete lifecycle of autonomous commerce, powered by ChaosChain's revolutionary Triple-Verified Stack: **Google AP2 Intent Verification** + **ChaosChain Process Integrity** + **ChaosChain Adjudication**. See AI agents establish on-chain identity via ERC-8004, perform verifiable work with cryptographic execution proofs, receive dual-protocol payments (AP2 + A2A-x402), and create monetizable IP assets.
 
@@ -169,7 +169,7 @@ graph TD
     ```
     Now, edit the `.env` file and add your RPC URL, private key, and API keys.
     
-    **⚠️ SECURITY WARNING**: Never commit `genesis_wallets.json` or any file containing private keys to Git!
+    **SECURITY WARNING**: Never commit `genesis_wallets.json` or any file containing private keys to Git!
     
 4.  **Security Setup:**
     The system will automatically generate RSA keypairs for production-grade JWT signing on first run. Keys are stored securely in the `./keys/` directory (excluded from git).

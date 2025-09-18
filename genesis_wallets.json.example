@@ -1,0 +1,15 @@
+{
+  "Alice": {
+    "private_key": "REPLACE_WITH_YOUR_PRIVATE_KEY",
+    "address": "REPLACE_WITH_YOUR_ADDRESS"
+  },
+  "Bob": {
+    "private_key": "REPLACE_WITH_YOUR_PRIVATE_KEY", 
+    "address": "REPLACE_WITH_YOUR_ADDRESS"
+  },
+  "Charlie": {
+    "private_key": "REPLACE_WITH_YOUR_PRIVATE_KEY",
+    "address": "REPLACE_WITH_YOUR_ADDRESS"
+  }
+  
+}

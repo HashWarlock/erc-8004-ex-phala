@@ -193,6 +193,12 @@ keys/
 *.p12
 *.pfx
 
+# Wallet files with private keys
+genesis_wallets.json
+*_wallets.json
+wallet_*.json
+private_keys.json
+
 # Deployment artifacts
 deployment.json
 deployments/
@@ -205,7 +211,7 @@ validations/*.json
 
 data
 
-genesis_wallets.json
 genesis_studio_triple_verified_stack.py
 COMPLETE_TRUST_STACK_INTEGRATION.md
 MVP_ERC_Based.md
+MULTI_PAYMENT_INTEGRATION_SUMMARY.md

@@ -165,8 +165,11 @@ graph TD
 4.  **Configure your environment:**
     ```bash
     cp .env.example .env
+    cp genesis_wallets.json.example genesis_wallets.json
     ```
     Now, edit the `.env` file and add your RPC URL, private key, and API keys.
+    
+    **⚠️ SECURITY WARNING**: Never commit `genesis_wallets.json` or any file containing private keys to Git!
     
 4.  **Security Setup:**
     The system will automatically generate RSA keypairs for production-grade JWT signing on first run. Keys are stored securely in the `./keys/` directory (excluded from git).

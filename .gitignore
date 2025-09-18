@@ -193,6 +193,12 @@ keys/
 *.p12
 *.pfx
 
+# Wallet files with private keys
+genesis_wallets.json
+*_wallets.json
+wallet_*.json
+private_keys.json
+
 # Deployment artifacts
 deployment.json
 deployments/

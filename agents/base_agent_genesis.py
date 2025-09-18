@@ -225,8 +225,18 @@ class GenesisBaseAgent:
                 raise Exception(f"Registration transaction failed with status {receipt.status}")
                 
         except Exception as e:
-            rprint(f"[red]❌ Registration failed: {e}[/red]")
-            raise
+            error_msg = str(e)
+            rprint(f"[red]❌ Registration failed: {error_msg}[/red]")
+            
+            # Check for specific error types
+            if "insufficient funds" in error_msg.lower():
+                rprint(f"[yellow]💰 Insufficient ETH for gas fees in wallet: {self.address}[/yellow]")
+                rprint(f"[blue]Please fund this wallet using Base Sepolia faucet:[/blue]")
+                rprint(f"[blue]https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet[/blue]")
+            elif "0x7b857a6b" in error_msg:
+                rprint(f"[yellow]⚠️  Contract revert - likely insufficient gas or contract issue[/yellow]")
+            
+            raise Exception(f"Failed to register {self.agent_domain}: {error_msg}")
     
     def _get_agent_name_from_domain(self) -> str:
         """Extract agent name from domain"""

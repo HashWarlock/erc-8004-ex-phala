@@ -30,8 +30,86 @@ class GenesisValidationTool(BaseTool):
     
     def _run(self, analysis_data: dict, validation_criteria: str) -> str:
         """
-        Perform comprehensive validation of market analysis
+        Perform comprehensive validation of analysis data (market or shopping)
         """
+        
+        # Detect if this is shopping data or market analysis data
+        if "item_type" in analysis_data or "shopping_result" in analysis_data:
+            return self._validate_shopping_data(analysis_data, validation_criteria)
+        else:
+            return self._validate_market_data(analysis_data, validation_criteria)
+    
+    def _validate_shopping_data(self, analysis_data: dict, validation_criteria: str) -> str:
+        """Validate shopping analysis data"""
+        
+        # Extract shopping-specific components
+        item_type = analysis_data.get("item_type", "Unknown")
+        final_price = analysis_data.get("final_price", 0)
+        merchant = analysis_data.get("merchant", "")
+        availability = analysis_data.get("availability", "")
+        
+        # Shopping validation scoring components
+        validation_result = {
+            "validation_timestamp": datetime.now().isoformat(),
+            "validated_symbol": item_type,
+            "validation_criteria": validation_criteria,
+            "scoring_breakdown": {
+                "data_completeness": self._score_shopping_completeness(analysis_data),
+                "technical_accuracy": self._score_shopping_accuracy(analysis_data),
+                "price_reasonableness": self._score_shopping_price_reasonableness(analysis_data),
+                "recommendation_quality": self._score_shopping_quality(analysis_data),
+                "methodology_soundness": self._score_methodology(analysis_data)
+            },
+            "detailed_assessment": {
+                "strengths": [],
+                "weaknesses": [],
+                "recommendations_for_improvement": []
+            },
+            "genesis_studio_metadata": {
+                "validator_version": "1.0.0",
+                "validation_methodology": "Multi-factor shopping analysis assessment",
+                "confidence_in_validation": 0.95
+            }
+        }
+        
+        # Calculate scores and assessments
+        scores = validation_result["scoring_breakdown"]
+        
+        # Shopping-specific assessments
+        if scores["data_completeness"] >= 80:
+            validation_result["detailed_assessment"]["strengths"].append("Complete product information provided")
+        elif scores["data_completeness"] < 60:
+            validation_result["detailed_assessment"]["weaknesses"].append("Missing key product details")
+            validation_result["detailed_assessment"]["recommendations_for_improvement"].append("Include all required product specifications")
+        
+        if scores["price_reasonableness"] >= 80:
+            validation_result["detailed_assessment"]["strengths"].append("Reasonable pricing within budget constraints")
+        elif scores["price_reasonableness"] < 60:
+            validation_result["detailed_assessment"]["weaknesses"].append("Pricing may exceed reasonable limits")
+            validation_result["detailed_assessment"]["recommendations_for_improvement"].append("Review pricing logic and budget adherence")
+        
+        # Calculate overall score
+        overall_score = sum(scores.values()) / len(scores)
+        validation_result["overall_score"] = round(overall_score)
+        
+        # Add qualitative assessment
+        if overall_score >= 90:
+            validation_result["quality_rating"] = "Excellent"
+            validation_result["validation_summary"] = "Outstanding shopping analysis meeting all criteria"
+        elif overall_score >= 80:
+            validation_result["quality_rating"] = "Good"
+            validation_result["validation_summary"] = "Solid shopping analysis with minor areas for improvement"
+        elif overall_score >= 70:
+            validation_result["quality_rating"] = "Acceptable"
+            validation_result["validation_summary"] = "Adequate shopping analysis with some notable weaknesses"
+        else:
+            validation_result["quality_rating"] = "Needs Improvement"
+            validation_result["validation_summary"] = "Shopping analysis requires significant enhancement"
+        
+        return json.dumps(validation_result, indent=2)
+    
+    def _validate_market_data(self, analysis_data: dict, validation_criteria: str) -> str:
+        """Validate market analysis data (original logic)"""
         
         # Extract key components for validation
         symbol = analysis_data.get("symbol", "Unknown")
@@ -178,6 +256,104 @@ class GenesisValidationTool(BaseTool):
         
         return min(100, max(0, score))
     
+    def _score_shopping_completeness(self, analysis_data: dict) -> float:
+        """Score the completeness of shopping analysis data"""
+        
+        required_fields = [
+            "item_type", "final_price", "merchant", "availability", 
+            "deal_quality", "color_match_found", "auto_purchase_eligible"
+        ]
+        
+        present_fields = sum(1 for field in required_fields if field in analysis_data and analysis_data[field] is not None)
+        base_score = (present_fields / len(required_fields)) * 100
+        
+        # Bonus points for detailed information
+        bonus = 0
+        if "estimated_delivery" in analysis_data:
+            bonus += 5
+        if "premium_applied" in analysis_data:
+            bonus += 5
+        if "confidence" in analysis_data and analysis_data["confidence"] > 0.8:
+            bonus += 10
+        
+        return min(100, base_score + bonus)
+    
+    def _score_shopping_accuracy(self, analysis_data: dict) -> float:
+        """Score the accuracy of shopping analysis"""
+        
+        score = 70  # Base score
+        
+        # Check price logic
+        final_price = analysis_data.get("final_price", 0)
+        base_price = analysis_data.get("base_price", 0)
+        if final_price > 0 and base_price > 0:
+            score += 15
+            # Check if premium is reasonable (< 30%)
+            if final_price <= base_price * 1.3:
+                score += 10
+        
+        # Check color matching logic
+        if "color_match_found" in analysis_data:
+            score += 10
+        
+        # Check auto-purchase eligibility logic
+        if "auto_purchase_eligible" in analysis_data:
+            score += 5
+        
+        return min(100, max(0, score))
+    
+    def _score_shopping_price_reasonableness(self, analysis_data: dict) -> float:
+        """Score the reasonableness of shopping prices"""
+        
+        score = 60  # Base score
+        
+        final_price = analysis_data.get("final_price", 0)
+        base_price = analysis_data.get("base_price", 0)
+        
+        if final_price > 0:
+            score += 20
+            
+            # Check if within reasonable range
+            if base_price > 0:
+                premium = (final_price - base_price) / base_price
+                if premium <= 0.20:  # 20% premium is reasonable
+                    score += 20
+                elif premium <= 0.30:  # 30% is acceptable
+                    score += 10
+        
+        # Check deal quality assessment
+        deal_quality = analysis_data.get("deal_quality", "")
+        if deal_quality in ["excellent", "good"]:
+            score += 10
+        
+        return min(100, max(0, score))
+    
+    def _score_shopping_quality(self, analysis_data: dict) -> float:
+        """Score the quality of shopping recommendations"""
+        
+        score = 70  # Base score
+        
+        # Check merchant information
+        if analysis_data.get("merchant"):
+            score += 10
+        
+        # Check availability information
+        if analysis_data.get("availability") == "in_stock":
+            score += 10
+        
+        # Check delivery information
+        if analysis_data.get("estimated_delivery"):
+            score += 5
+        
+        # Check confidence level
+        confidence = analysis_data.get("confidence", 0)
+        if confidence >= 0.9:
+            score += 10
+        elif confidence >= 0.8:
+            score += 5
+        
+        return min(100, max(0, score))
+    
     def _score_recommendation_quality(self, recommendations: dict) -> float:
         """Score the quality of trading recommendations"""
         
@@ -275,9 +451,23 @@ class GenesisValidatorAgent(GenesisBaseAgent):
             validated_item = item_type  # Set this for consistent variable naming
             rprint(f"[yellow]🔍 Validating smart shopping results for {item_type}...[/yellow]")
             
+            # Extract the shopping result data for validation
+            shopping_result = analysis_data.get("shopping_result", {})
+            
             validation_task = Task(
                 description=f"""
                 Perform a comprehensive validation of the smart shopping results for {item_type} with the following criteria:
+                
+                Shopping Data to Validate:
+                - Item Type: {shopping_result.get("item_type", "Unknown")}
+                - Final Price: ${shopping_result.get("final_price", 0)}
+                - Base Price: ${shopping_result.get("base_price", 0)}
+                - Merchant: {shopping_result.get("merchant", "Unknown")}
+                - Availability: {shopping_result.get("availability", "Unknown")}
+                - Deal Quality: {shopping_result.get("deal_quality", "Unknown")}
+                - Color Match: {shopping_result.get("color_match_found", False)}
+                - Auto Purchase Eligible: {shopping_result.get("auto_purchase_eligible", False)}
+                - Confidence: {shopping_result.get("confidence", 0)}
                 
                 1. Search Completeness:
                    - Verify all required product information is present
@@ -303,6 +493,7 @@ class GenesisValidatorAgent(GenesisBaseAgent):
                    - Assess search methodology and decision logic
                    - Evaluate transparency and user constraint adherence
                    
+                Use the genesis_validation tool with the complete shopping data provided above.
                 Provide a detailed scoring breakdown with specific feedback and an overall score out of 100.
                 """,
                 expected_output="A comprehensive JSON-formatted validation report with scoring",
@@ -388,8 +579,9 @@ class GenesisValidatorAgent(GenesisBaseAgent):
             
             score = validation_data.get("overall_score", 85)
             quality = validation_data.get("quality_rating", "Good")
+            validated_symbol = validation_data.get("validated_symbol", "Unknown")
             
-            rprint(f"[green]✅ Validation completed for {symbol}[/green]")
+            rprint(f"[green]✅ Validation completed for {validated_symbol}[/green]")
             rprint(f"[blue]   Score: {score}/100 ({quality})[/blue]")
             
             return validation_data

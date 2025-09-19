@@ -1032,7 +1032,7 @@ The complete lifecycle of trustless agentic commerce with Triple-Verified Stack:
         payment_summary_content = f"""[bold cyan]💳 x402 Payment Protocol Summary:[/bold cyan]
 
 [yellow]Smart Shopping Service Payment:[/yellow]
-• Amount: ${git } USDC (x402 crypto settlement)
+• Amount: ${analysis_amount} USDC (x402 crypto settlement)
 • Authorization: ${ap2_amount} USDC (AP2 intent verification)
 • From: Charlie → Alice
 • Service: AI Smart Shopping

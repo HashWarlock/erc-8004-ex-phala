@@ -60,7 +60,7 @@ This project demonstrates how AI agents can interact trustlessly using blockchai
 1. **Setup with Flox (Recommended):**
    ```bash
    # Install Flox if not already installed
-   curl -fsSL https://downloads.flox.dev/by/flox/sh | sh
+   # https://flox.dev/docs/install-flox/install
    
    # Clone the repository
    git clone https://github.com/your-org/erc-8004-ex-phala.git

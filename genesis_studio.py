@@ -969,62 +969,138 @@ class GenesisStudioX402Orchestrator:
         rprint("=" * 60)
         
         try:
-            # Get payment summary from Charlie (the payer)
-            charlie_payment_summary = self.charlie_sdk.get_x402_payment_summary()
+            # Extract actual payment data from demo results
+            payment_data = self._extract_x402_payment_data_from_results()
             
             rprint(f"\n[bold green]🔍 x402 Protocol Verification[/bold green]")
-            rprint(f"   Protocol: {charlie_payment_summary.get('protocol', 'x402')} v{charlie_payment_summary.get('protocol_version', '0.2.1')}")
-            rprint(f"   Network: {charlie_payment_summary.get('network', 'base-sepolia')}")
-            rprint(f"   Treasury: {charlie_payment_summary.get('treasury_address', 'N/A')}")
-            rprint(f"   Protocol Fee: {charlie_payment_summary.get('protocol_fee_percentage', 2.5)}%")
+            rprint(f"   Protocol: x402 v0.2.1+ (Coinbase Official)")
+            rprint(f"   Network: base-sepolia")
+            rprint(f"   Treasury: 0x20E7B2A2c8969725b88Dd3EF3a11Bc3353C83F70")
+            rprint(f"   Protocol Fee: 2.5%")
+            rprint(f"   Settlement Mode: Direct USDC transfers (2 transactions per payment)")
             
             rprint(f"\n[bold green]💳 Payment Performance Metrics[/bold green]")
-            success_rate = charlie_payment_summary.get('success_rate', 0) * 100
-            rprint(f"   Success Rate: [green]{success_rate:.1f}%[/green]")
-            rprint(f"   Total Payments: {charlie_payment_summary.get('total_payments', 0)}")
-            rprint(f"   Total Volume: [green]${charlie_payment_summary.get('total_volume_usdc', 0)} USDC[/green]")
-            rprint(f"   Protocol Fees: ${charlie_payment_summary.get('total_protocol_fees_usdc', 0)} USDC")
+            if payment_data['total_payments'] > 0:
+                success_rate = (payment_data['successful_payments'] / payment_data['total_payments']) * 100
+                rprint(f"   Success Rate: [green]{success_rate:.1f}%[/green]")
+                rprint(f"   Total Payments: {payment_data['total_payments']}")
+                rprint(f"   Total Volume: [green]${payment_data['total_volume']:.2f} USDC[/green]")
+                rprint(f"   Protocol Fees Collected: [green]${payment_data['total_fees']:.4f} USDC[/green]")
+                rprint(f"   Net Amount to Providers: [green]${payment_data['net_to_providers']:.4f} USDC[/green]")
+            else:
+                rprint(f"   [yellow]No x402 payments in current session[/yellow]")
             
-            # Agent-level statistics
-            agent_stats = charlie_payment_summary.get('agent_statistics', {})
-            if agent_stats:
-                rprint(f"\n[bold green]👥 Agent Payment Statistics[/bold green]")
-                for agent, stats in agent_stats.items():
-                    sent = stats.get('sent', 0)
-                    received = stats.get('received', 0)
-                    fees = stats.get('fees_paid', 0)
-                    rprint(f"   {agent}:")
-                    if sent > 0:
-                        rprint(f"     Sent: [red]${sent} USDC[/red] (Fees: ${fees})")
-                    if received > 0:
-                        rprint(f"     Received: [green]${received} USDC[/green]")
+            # Multi-Agent x402 Transaction Details
+            rprint(f"\n[bold green]🔗 x402 Transaction Architecture[/bold green]")
+            rprint(f"   Each x402 payment creates [bold]2 separate USDC transactions[/bold]:")
+            rprint(f"   1️⃣  Protocol Fee → ChaosChain Treasury (2.5%)")
+            rprint(f"   2️⃣  Net Payment → Service Provider (97.5%)")
             
-            # Payment history details
-            payment_history = self.charlie_sdk.get_x402_payment_history()
-            if payment_history:
-                rprint(f"\n[bold green]📋 Recent x402 Transactions[/bold green]")
-                for i, payment in enumerate(payment_history[-3:], 1):  # Show last 3
-                    status_color = "green" if payment.get('status') == 'completed' else "red"
-                    rprint(f"   Transaction {i}:")
-                    rprint(f"     Amount: [{status_color}]${payment.get('amount_usdc', 'N/A')} USDC[/{status_color}]")
-                    rprint(f"     Route: {payment.get('from_agent', 'N/A')} → {payment.get('to_agent', 'N/A')}")
-                    rprint(f"     Status: [{status_color}]{payment.get('status', 'N/A')}[/{status_color}]")
-                    rprint(f"     Protocol: x402 (Coinbase Official)")
-                    if payment.get('transaction_hash'):
-                        tx_short = payment['transaction_hash'][:20] + "..."
-                        rprint(f"     TX Hash: {tx_short}")
+            # Agent-level statistics from demo results
+            rprint(f"\n[bold green]👥 Agent Payment Statistics[/bold green]")
+            
+            # Analysis payment (Charlie → Alice)
+            analysis_payment = self.results.get("analysis", {}).get("dual_payment", {})
+            if analysis_payment.get("x402_payment_result"):
+                payment = analysis_payment["x402_payment_result"]
+                protocol_fee = payment.receipt_data.get("protocol_fee", 0)
+                net_amount = payment.receipt_data.get("net_amount", payment.amount)
+                
+                rprint(f"   🔧 Alice (Server Agent):")
+                rprint(f"     Service: AI Smart Shopping Analysis")
+                rprint(f"     Received: [green]${net_amount:.4f} USDC[/green] (net)")
+                rprint(f"     Protocol Fee: [yellow]${protocol_fee:.4f} USDC[/yellow] → Treasury")
+                rprint(f"     Fee TX: {payment.receipt_data.get('protocol_fee_tx', 'N/A')[:20]}...")
+                rprint(f"     Main TX: {payment.transaction_hash[:20]}...")
+            
+            # Validation payment (Charlie → Bob)
+            validation_payment = self.results.get("validation", {}).get("x402_payment")
+            if validation_payment:
+                protocol_fee = validation_payment.receipt_data.get("protocol_fee", 0)
+                net_amount = validation_payment.receipt_data.get("net_amount", validation_payment.amount)
+                
+                rprint(f"   🔍 Bob (Validator Agent):")
+                rprint(f"     Service: CrewAI Quality Validation")
+                rprint(f"     Received: [green]${net_amount:.4f} USDC[/green] (net)")
+                rprint(f"     Protocol Fee: [yellow]${protocol_fee:.4f} USDC[/yellow] → Treasury")
+                rprint(f"     Main TX: {validation_payment.transaction_hash[:20]}...")
+            
+            # Charlie's payment summary
+            total_sent = 0
+            total_fees = 0
+            if analysis_payment.get("x402_payment_result"):
+                payment = analysis_payment["x402_payment_result"]
+                total_sent += payment.amount
+                total_fees += payment.receipt_data.get("protocol_fee", 0)
+            if validation_payment:
+                total_sent += validation_payment.amount
+                total_fees += validation_payment.receipt_data.get("protocol_fee", 0)
+                
+            if total_sent > 0:
+                rprint(f"   💳 Charlie (Client Agent):")
+                rprint(f"     Services Purchased: Smart Shopping + Validation")
+                rprint(f"     Total Sent: [red]${total_sent:.2f} USDC[/red]")
+                rprint(f"     Protocol Fees Paid: [yellow]${total_fees:.4f} USDC[/yellow]")
+            
+            # Treasury fee collection summary
+            if total_fees > 0:
+                rprint(f"\n[bold green]🏦 ChaosChain Treasury Collection[/bold green]")
+                rprint(f"   Total Fees Collected: [green]${total_fees:.4f} USDC[/green]")
+                rprint(f"   Fee Percentage: 2.5% of all x402 payments")
+                rprint(f"   Treasury Address: 0x20E7B2A2c8969725b88Dd3EF3a11Bc3353C83F70")
+                rprint(f"   Revenue Model: Automatic fee collection on every x402 payment")
             
             rprint(f"\n[bold green]🎯 x402 Benefits Demonstrated[/bold green]")
             rprint(f"   ✅ Frictionless agent-to-agent payments")
             rprint(f"   ✅ Cryptographic payment receipts for PoA")
-            rprint(f"   ✅ Real-time payment monitoring")
-            rprint(f"   ✅ Automatic fee collection (2.5% to ChaosChain)")
+            rprint(f"   ✅ Dual-transaction architecture (fee + payment)")
+            rprint(f"   ✅ Automatic protocol fee collection (2.5% to ChaosChain)")
             rprint(f"   ✅ Enhanced evidence packages with payment proofs")
             rprint(f"   ✅ Production-ready USDC settlement on Base Sepolia")
             
         except Exception as e:
             rprint(f"[yellow]⚠️  x402 monitoring unavailable: {e}[/yellow]")
             rprint(f"   This is expected if no payments were made in this session")
+    
+    def _extract_x402_payment_data_from_results(self):
+        """Extract x402 payment data from demo results for monitoring"""
+        
+        total_payments = 0
+        successful_payments = 0
+        total_volume = 0.0
+        total_fees = 0.0
+        net_to_providers = 0.0
+        
+        # Analysis payment (Charlie → Alice)
+        analysis_payment = self.results.get("analysis", {}).get("dual_payment", {})
+        if analysis_payment.get("x402_payment_result"):
+            payment = analysis_payment["x402_payment_result"]
+            total_payments += 1
+            successful_payments += 1
+            total_volume += payment.amount
+            protocol_fee = payment.receipt_data.get("protocol_fee", 0)
+            net_amount = payment.receipt_data.get("net_amount", payment.amount)
+            total_fees += protocol_fee
+            net_to_providers += net_amount
+        
+        # Validation payment (Charlie → Bob)
+        validation_payment = self.results.get("validation", {}).get("x402_payment")
+        if validation_payment:
+            total_payments += 1
+            successful_payments += 1
+            total_volume += validation_payment.amount
+            protocol_fee = validation_payment.receipt_data.get("protocol_fee", 0)
+            net_amount = validation_payment.receipt_data.get("net_amount", validation_payment.amount)
+            total_fees += protocol_fee
+            net_to_providers += net_amount
+        
+        return {
+            "total_payments": total_payments,
+            "successful_payments": successful_payments,
+            "total_volume": total_volume,
+            "total_fees": total_fees,
+            "net_to_providers": net_to_providers
+        }
     
     def _print_final_success_summary(self):
         """Print the beautiful final success summary table with x402 enhancements"""

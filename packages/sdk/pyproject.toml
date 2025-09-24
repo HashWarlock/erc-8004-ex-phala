@@ -4,15 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "chaoschain-sdk"
-version = "0.1.0"
-description = "Production-ready SDK for building agents on the ChaosChain protocol"
+version = "0.1.1"
+description = "Developer SDK for building verifiable, monetizable agents on the ChaosChain protocol"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
-    {name = "ChaosChain Labs", email = "hello@chaoschain.com"}
+    {name = "ChaosChain", email = "sumeet.chougule@nethermind.io"}
 ]
 maintainers = [
-    {name = "ChaosChain Labs", email = "hello@chaoschain.com"}
+    {name = "ChaosChain", email = "sumeet.chougule@nethermind.io"}
 ]
 keywords = [
     "ai-agents", 
@@ -22,12 +22,17 @@ keywords = [
     "x402", 
     "process-integrity",
     "web3",
-    "autonomous-agents"
+    "autonomous-agents",
+    "triple-verified-stack",
+    "chaoschain",
+    "google-ap2",
+    "crypto-payments",
+    "agent-commerce",
+    "verifiable-ai"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -44,6 +49,9 @@ dependencies = [
     "web3>=6.0.0",
     "eth-account>=0.8.0",
     
+    # x402 Payment Protocol (Coinbase official - PRIMARY payment method)
+    "x402>=0.2.1",
+    
     # HTTP and API clients
     "requests>=2.28.0",
     "httpx>=0.24.0",
@@ -56,8 +64,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "python-dotenv>=1.0.0",
     
-    # IPFS and Storage
-    "ipfshttpclient>=0.8.0",
+    # Note: IPFS storage handled via Pinata REST API (no ipfshttpclient needed)
     
     # Rich console output
     "rich>=13.0.0",
@@ -68,8 +75,8 @@ dependencies = [
     # Date/time handling
     "python-dateutil>=2.8.0",
     
-    # Google AP2 Integration (official library)
-    "ap2>=0.1.0",
+    # Note: Google AP2 integration available but requires manual installation
+    # Install with: pip install git+https://github.com/google-agentic-commerce/AP2.git@main
 ]
 
 [project.optional-dependencies]
@@ -78,6 +85,15 @@ payments = [
     "stripe>=7.0.0",
     "paypalrestsdk>=1.13.0",
     # Google Pay and Apple Pay integrations are handled via web APIs
+]
+ap2 = [
+    # Note: AP2 must be installed manually from GitHub
+    # This section serves as documentation only
+    # Install with: pip install git+https://github.com/google-agentic-commerce/AP2.git@main
+]
+server = [
+    # x402 paywall server dependencies
+    "flask>=3.0.0",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -95,10 +111,10 @@ docs = [
 
 [project.urls]
 Homepage = "https://chaoscha.in"
-Documentation = "https://docs.chaoschain.com"
+Documentation = "https://docs.chaoscha.in"
 Repository = "https://github.com/ChaosChain/chaoschain"
 "Bug Reports" = "https://github.com/ChaosChain/chaoschain/issues"
-"Source Code" = "https://github.com/ChaosChain/chaoschain"
+"Source Code" = "https://github.com/ChaosChain/chaoschain/tree/main/packages/sdk"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -23,14 +23,11 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from rich.panel import Panel
 
-# Add agents directory to path for CLI utils
-sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
-
-# Add SDK to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'packages', 'sdk'))
-
 from dotenv import load_dotenv
-from agents.cli_utils import GenesisStudioCLI
+from rich import print as rprint
+from rich.panel import Panel
+from rich.align import Align
+from rich.table import Table
 from chaoschain_sdk import ChaosChainAgentSDK, AgentRole, NetworkConfig
 
 # Load environment variables
@@ -40,8 +37,6 @@ class GenesisStudioX402Orchestrator:
     """Enhanced Genesis Studio orchestrator with x402 payment integration"""
     
     def __init__(self):
-        self.cli = GenesisStudioCLI()
-        
         # Track results for final summary
         self.results = {}
         
@@ -54,7 +49,7 @@ class GenesisStudioX402Orchestrator:
         """Execute the complete Genesis Studio x402 demonstration"""
         
         try:
-            self.cli.print_banner()
+            self._print_banner()
             
             # Phase 1: Setup & On-Chain Identity
             self._phase_1_setup_and_identity()
@@ -72,113 +67,130 @@ class GenesisStudioX402Orchestrator:
             self._display_final_summary()
             
         except KeyboardInterrupt:
-            self.cli.print_warning("Demo interrupted by user")
+            rprint("[yellow]⚠️  Demo interrupted by user[/yellow]")
             sys.exit(1)
         except Exception as e:
             import traceback
-            print("FULL TRACEBACK:")
+            rprint("[red]FULL TRACEBACK:[/red]")
             traceback.print_exc()
-            self.cli.print_error("Demo failed with unexpected error", str(e))
+            rprint(f"[red]❌ Demo failed with unexpected error: {e}[/red]")
             sys.exit(1)
+    
+    def _print_banner(self):
+        """Print Genesis Studio banner"""
+        banner = """
+[bold blue]🚀 CHAOSCHAIN GENESIS STUDIO - SDK VERSION[/bold blue]
+[bold cyan]Triple-Verified Stack Commercial Prototype[/bold cyan]
+
+[yellow]✨ Powered by ChaosChain SDK with:[/yellow]
+• Native x402 payments (Coinbase official)
+• Google AP2 integration (intent verification)  
+• Process integrity verification
+• ERC-8004 on-chain identity registry
+• IPFS evidence storage
+"""
+        
+        banner_panel = Panel(
+            Align.center(banner),
+            title="[bold green]🏆 Genesis Studio[/bold green]",
+            border_style="green",
+            padding=(1, 2)
+        )
+        
+        rprint(banner_panel)
+        rprint()
     
     def _phase_1_setup_and_identity(self):
         """Phase 1: Setup & On-Chain Identity Registration with x402 Integration"""
         
-        self.cli.print_phase_header(
-            1, 
-            "Setup & x402-Enhanced Identity",
-            "Creating agent SDKs and registering on-chain identities with payment capabilities"
-        )
+        rprint("\n[bold blue]📋 Phase 1: Setup & x402-Enhanced Identity[/bold blue]")
+        rprint("[cyan]Creating agent SDKs and registering on-chain identities with payment capabilities[/cyan]")
+        rprint("=" * 80)
         
         # Step 1: Configuration Check
-        self.cli.print_step(1, "Validating x402 and ERC-8004 configuration", "in_progress")
+        rprint("\n[blue]🔧 Step 1: Validating x402 and ERC-8004 configuration...[/blue]")
         self._validate_configuration()
-        self.cli.print_step(1, "Configuration validated", "completed")
+        rprint("[green]✅ Configuration validated[/green]")
         
         # Step 2: Initialize Agent SDKs with x402 Integration
-        self.cli.print_step(2, "Initializing ChaosChain Agent SDKs with x402 payment support", "in_progress")
+        rprint("\n[blue]🔧 Step 2: Initializing ChaosChain Agent SDKs with x402 payment support...[/blue]")
         self._initialize_agent_sdks()
-        self.cli.print_step(2, "Agent SDKs initialized", "completed")
+        rprint("[green]✅ Agent SDKs initialized[/green]")
         
         # Step 3: Fund wallets from faucet
-        self.cli.print_step(3, "Funding wallets from Base Sepolia faucet", "in_progress")
+        rprint("\n[blue]🔧 Step 3: Funding wallets from Base Sepolia faucet...[/blue]")
         self._fund_agent_wallets()
-        self.cli.print_step(3, "Wallets funded", "completed")
+        rprint("[green]✅ Wallets funded[/green]")
         
         # Step 4: On-chain registration
-        self.cli.print_step(4, "Registering agents on ERC-8004 IdentityRegistry", "in_progress")
+        rprint("\n[blue]🔧 Step 4: Registering agents on ERC-8004 IdentityRegistry...[/blue]")
         self._register_agents_onchain()
-        self.cli.print_step(4, "Agents registered on-chain", "completed")
+        rprint("[green]✅ Agents registered on-chain[/green]")
     
     def _phase_2_x402_work_and_payment(self):
         """Phase 2: Triple-Verified Stack Work & Payment Flow"""
         
-        self.cli.print_phase_header(
-            2,
-            "Triple-Verified Stack Work & Payment", 
-            "Alice performs smart shopping with AP2 intent verification, ChaosChain process integrity, and x402 payments"
-        )
+        rprint("\n[bold blue]📋 Phase 2: Triple-Verified Stack Work & Payment[/bold blue]")
+        rprint("[cyan]Alice performs smart shopping with AP2 intent verification, ChaosChain process integrity, and x402 payments[/cyan]")
+        rprint("=" * 80)
         
         # Step 5: AP2 Intent Verification
-        self.cli.print_step(5, "Creating AP2 intent mandate for smart shopping", "in_progress")
+        rprint("\n[blue]🔧 Step 5: Creating AP2 intent mandate for smart shopping...[/blue]")
         intent_mandate = self._create_ap2_intent_mandate()
-        self.cli.print_step(5, "AP2 intent mandate created and verified", "completed")
+        rprint("[green]✅ AP2 intent mandate created and verified[/green]")
         
         # Step 6: Work Execution with Process Integrity (Alice)
-        self.cli.print_step(6, "Alice performing smart shopping with ChaosChain Process Integrity", "in_progress")
+        rprint("\n[blue]🔧 Step 6: Alice performing smart shopping with ChaosChain Process Integrity...[/blue]")
         analysis_data, process_integrity_proof = self._execute_smart_shopping_with_integrity()
-        self.cli.print_step(6, "Smart shopping completed with process integrity proof", "completed")
+        rprint("[green]✅ Smart shopping completed with process integrity proof[/green]")
         
         # Step 7: Evidence Storage (Alice)
-        self.cli.print_step(7, "Storing analysis on IPFS via Pinata", "in_progress")
+        rprint("\n[blue]🔧 Step 7: Storing analysis on IPFS via Pinata...[/blue]")
         analysis_cid = self._store_analysis_on_ipfs(analysis_data)
-        self.cli.print_step(7, "Analysis stored on IPFS", "completed")
+        rprint("[green]✅ Analysis stored on IPFS[/green]")
         
         # Step 8: AP2 Universal Payment + x402 Crypto Settlement
-        self.cli.print_step(8, "Processing authorization + payment: AP2 intent verification + x402 crypto settlement", "in_progress")
+        rprint("\n[blue]🔧 Step 8: Processing authorization + payment: AP2 intent verification + x402 crypto settlement...[/blue]")
         payment_results = self._execute_dual_payment_flow(analysis_cid, analysis_data, intent_mandate)
-        self.cli.print_step(8, f"Authorization + Payment completed (AP2 authorization: ${payment_results['ap2_amount']}, x402 settlement: {payment_results['x402_amount']} USDC)", "completed")
+        rprint(f"[green]✅ Authorization + Payment completed (AP2 authorization: ${payment_results['ap2_amount']}, x402 settlement: {payment_results['x402_amount']} USDC)[/green]")
         
         # Step 9: Validation Request with ERC-8004 (Alice)
-        self.cli.print_step(9, "Alice requesting validation via ERC-8004 ValidationRegistry", "in_progress")
+        rprint("\n[blue]🔧 Step 9: Alice requesting validation via ERC-8004 ValidationRegistry...[/blue]")
         validation_tx = self._request_validation_erc8004(analysis_cid, analysis_data)
-        self.cli.print_step(9, "ERC-8004 validation requested", "completed")
+        rprint("[green]✅ ERC-8004 validation requested[/green]")
         
         # Step 10: Validation & Payment (Bob)
-        self.cli.print_step(10, "Bob validating with process integrity and payment", "in_progress")
+        rprint("\n[blue]🔧 Step 10: Bob validating with process integrity and payment...[/blue]")
         validation_score, validation_result = self._perform_validation_with_payment(analysis_cid)
-        self.cli.print_step(10, f"Validation completed (Score: {validation_score}/100)", "completed")
+        rprint(f"[green]✅ Validation completed (Score: {validation_score}/100)[/green]")
     
     def _phase_3_enhanced_evidence_packages(self):
         """Phase 3: Enhanced Evidence Packages with Payment Proofs"""
         
-        self.cli.print_phase_header(
-            3,
-            "Enhanced Evidence Packages",
-            "Creating comprehensive evidence packages with x402 payment proofs for PoA"
-        )
+        rprint("\n[bold blue]📋 Phase 3: Enhanced Evidence Packages[/bold blue]")
+        rprint("[cyan]Creating comprehensive evidence packages with x402 payment proofs for PoA[/cyan]")
+        rprint("=" * 80)
         
-        # Step 10: Create Enhanced Evidence Package (Alice)
-        self.cli.print_step(10, "Alice creating enhanced evidence package with payment proofs", "in_progress")
+        # Step 11: Create Enhanced Evidence Package (Alice)
+        rprint("\n[blue]🔧 Step 11: Alice creating enhanced evidence package with payment proofs...[/blue]")
         alice_evidence_package = self._create_enhanced_evidence_package()
-        self.cli.print_step(10, "Enhanced evidence package created", "completed")
+        rprint("[green]✅ Enhanced evidence package created[/green]")
         
-        # Step 11: Store Enhanced Evidence Package
-        self.cli.print_step(11, "Storing enhanced evidence package on IPFS", "in_progress")
+        # Step 12: Store Enhanced Evidence Package
+        rprint("\n[blue]🔧 Step 12: Storing enhanced evidence package on IPFS...[/blue]")
         enhanced_evidence_cid = self._store_enhanced_evidence_package(alice_evidence_package)
-        self.cli.print_step(11, "Enhanced evidence package stored", "completed")
+        rprint("[green]✅ Enhanced evidence package stored[/green]")
     
     def _phase_4_ip_monetization(self):
         """Phase 4: IP Monetization via Story Protocol"""
         
-        self.cli.print_phase_header(
-            4,
-            "IP Monetization Flywheel",
-            "Registering enhanced evidence as IP assets on Story Protocol"
-        )
+        rprint("\n[bold blue]📋 Phase 4: IP Monetization Flywheel[/bold blue]")
+        rprint("[cyan]Registering enhanced evidence as IP assets on Story Protocol[/cyan]")
+        rprint("=" * 80)
         
-        # Step 12: Register Enhanced Evidence as IP (Demo mode)
-        self.cli.print_step(12, "Skipping Story Protocol registration for demo", "completed")
+        # Step 13: Register Enhanced Evidence as IP (Demo mode)
+        rprint("\n[blue]🔧 Step 13: Skipping Story Protocol registration for demo...[/blue]")
+        rprint("[green]✅ Story Protocol registration skipped[/green]")
         
         # Create demo IP results for final summary
         enhanced_ip = {
@@ -214,7 +226,7 @@ class GenesisStudioX402Orchestrator:
         
         # Validate network is set to base-sepolia
         if os.getenv("NETWORK") != "base-sepolia":
-            self.cli.print_warning("Network is not set to 'base-sepolia'. This demo is designed for Base Sepolia.")
+            rprint("[yellow]⚠️  Network is not set to 'base-sepolia'. This demo is designed for Base Sepolia.[/yellow]")
     
     def _initialize_agent_sdks(self):
         """Initialize ChaosChain Agent SDKs with Triple-Verified Stack integration"""
@@ -299,20 +311,18 @@ class GenesisStudioX402Orchestrator:
         for agent_name, sdk in [("Alice", self.alice_sdk), ("Bob", self.bob_sdk), ("Charlie", self.charlie_sdk)]:
             try:
                 agent_id, tx_hash = sdk.register_identity()
-                wallet_address = sdk.wallet_manager.get_wallet_address(agent_name)
-                self.cli.print_agent_registration(
-                    agent_name, 
-                    agent_id, 
-                    wallet_address, 
-                    tx_hash
-                )
+                wallet_address = sdk.wallet_address
+                rprint(f"[green]✅ {agent_name} registered successfully[/green]")
+                rprint(f"   Agent ID: {agent_id}")
+                rprint(f"   Wallet: {wallet_address}")
+                rprint(f"   Transaction: {tx_hash}")
                 registration_results[agent_name] = {
                     "agent_id": agent_id,
                     "tx_hash": tx_hash,
                     "address": wallet_address
                 }
             except Exception as e:
-                self.cli.print_error(f"Failed to register {agent_name}", str(e))
+                rprint(f"[red]❌ Failed to register {agent_name}: {e}[/red]")
                 registration_results[agent_name] = {"error": str(e)}
         
         self.results["registration"] = {
@@ -456,7 +466,10 @@ class GenesisStudioX402Orchestrator:
         
         if cid:
             gateway_url = self.alice_sdk.storage_manager.get_clickable_link(cid)
-            self.cli.print_ipfs_upload("analysis.json", cid, gateway_url)
+            rprint(f"[green]📦 Analysis uploaded to IPFS[/green]")
+            rprint(f"   File: analysis.json")
+            rprint(f"   CID: {cid}")
+            rprint(f"   Gateway: {gateway_url}")
             
             self.results["ipfs_analysis"] = {
                 "success": True,
@@ -503,15 +516,14 @@ class GenesisStudioX402Orchestrator:
         
         # Display payment results
         if x402_payment_result.transaction_hash:
-            self.cli.print_x402_payment(
-                "Charlie", 
-                "Alice", 
-                x402_payment_result.amount, 
-                x402_payment_result.transaction_hash,
-                "Smart Shopping Service (Crypto Settlement)"
-            )
+            rprint(f"[green]💳 x402 Payment Successful[/green]")
+            rprint(f"   From: Charlie")
+            rprint(f"   To: Alice")
+            rprint(f"   Amount: ${x402_payment_result.amount} USDC")
+            rprint(f"   Transaction: {x402_payment_result.transaction_hash}")
+            rprint(f"   Service: Smart Shopping Service (Crypto Settlement)")
         else:
-            print(f"⚠️  Payment failed but continuing demo")
+            rprint(f"[yellow]⚠️  Payment failed but continuing demo[/yellow]")
             
         # Display AP2 authorization details
         print(f"✅ AP2 Intent Authorization completed:")
@@ -590,7 +602,10 @@ class GenesisStudioX402Orchestrator:
             # Alice requests validation from Bob via ERC-8004
             tx_hash = self.alice_sdk.request_validation(bob_agent_id, data_hash)
             
-            self.cli.print_validation_request("Bob", data_hash, tx_hash)
+            rprint(f"[green]📋 Validation Request Sent[/green]")
+            rprint(f"   Validator: Bob")
+            rprint(f"   Data Hash: {data_hash}")
+            rprint(f"   Transaction: {tx_hash}")
             
             self.results["erc8004_validation_request"] = {
                 "success": True,
@@ -703,16 +718,18 @@ class GenesisStudioX402Orchestrator:
             print(f"⚠️  Validation response failed (continuing demo): {e}")
             # Continue demo even if validation fails
         
-        self.cli.print_validation_response("Bob", score, tx_hash)
+        rprint(f"[green]🔍 Validation Response Submitted[/green]")
+        rprint(f"   Validator: Bob")
+        rprint(f"   Score: {score}/100")
+        rprint(f"   Transaction: {tx_hash}")
         
         if validation_payment_result.transaction_hash:
-            self.cli.print_x402_payment(
-                "Charlie", 
-                "Bob", 
-                validation_payment_result.amount, 
-                validation_payment_result.transaction_hash,
-                "Validation Service"
-            )
+            rprint(f"[green]💳 x402 Payment Successful[/green]")
+            rprint(f"   From: Charlie")
+            rprint(f"   To: Bob")
+            rprint(f"   Amount: ${validation_payment_result.amount} USDC")
+            rprint(f"   Transaction: {validation_payment_result.transaction_hash}")
+            rprint(f"   Service: Validation Service")
         
         self.results["validation"] = {
             "success": True,
@@ -843,7 +860,10 @@ class GenesisStudioX402Orchestrator:
         
         if cid:
             gateway_url = self.alice_sdk.storage_manager.get_clickable_link(cid)
-            self.cli.print_ipfs_upload("enhanced_evidence_package.json", cid, gateway_url)
+            rprint(f"[green]📦 Enhanced Evidence Package uploaded to IPFS[/green]")
+            rprint(f"   File: enhanced_evidence_package.json")
+            rprint(f"   CID: {cid}")
+            rprint(f"   Gateway: {gateway_url}")
             
             self.results["enhanced_evidence"] = {
                 "success": True,
@@ -916,7 +936,95 @@ class GenesisStudioX402Orchestrator:
             }
         }
         
-        self.cli.print_final_summary(summary_data)
+        # Display final summary using rich
+        rprint("\n[bold blue]📋 FINAL SUMMARY[/bold blue]")
+        rprint("=" * 60)
+        
+        for component, details in summary_data.items():
+            status = "[green]✅ SUCCESS[/green]" if details["success"] else "[red]❌ FAILED[/red]"
+            rprint(f"\n[bold]{component}[/bold]: {status}")
+            rprint(f"   {details['details']}")
+            
+            if "tx_hashes" in details:
+                for name, tx_hash in details["tx_hashes"].items():
+                    if tx_hash:
+                        rprint(f"   {name}: {tx_hash}")
+            
+            if "cids" in details:
+                for name, cid in details["cids"].items():
+                    if cid:
+                        rprint(f"   {name}: {cid}")
+            
+            if "payments" in details:
+                for payment_name, payment_info in details["payments"].items():
+                    rprint(f"   {payment_name}: {payment_info}")
+        
+        # Add x402 Payment Monitoring & Observability
+        self._display_x402_monitoring_summary()
+    
+    def _display_x402_monitoring_summary(self):
+        """Display x402 payment monitoring and observability metrics"""
+        
+        rprint("\n[bold cyan]📊 x402 PAYMENT MONITORING & OBSERVABILITY[/bold cyan]")
+        rprint("=" * 60)
+        
+        try:
+            # Get payment summary from Charlie (the payer)
+            charlie_payment_summary = self.charlie_sdk.get_x402_payment_summary()
+            
+            rprint(f"\n[bold green]🔍 x402 Protocol Verification[/bold green]")
+            rprint(f"   Protocol: {charlie_payment_summary.get('protocol', 'x402')} v{charlie_payment_summary.get('protocol_version', '0.2.1')}")
+            rprint(f"   Network: {charlie_payment_summary.get('network', 'base-sepolia')}")
+            rprint(f"   Treasury: {charlie_payment_summary.get('treasury_address', 'N/A')}")
+            rprint(f"   Protocol Fee: {charlie_payment_summary.get('protocol_fee_percentage', 2.5)}%")
+            
+            rprint(f"\n[bold green]💳 Payment Performance Metrics[/bold green]")
+            success_rate = charlie_payment_summary.get('success_rate', 0) * 100
+            rprint(f"   Success Rate: [green]{success_rate:.1f}%[/green]")
+            rprint(f"   Total Payments: {charlie_payment_summary.get('total_payments', 0)}")
+            rprint(f"   Total Volume: [green]${charlie_payment_summary.get('total_volume_usdc', 0)} USDC[/green]")
+            rprint(f"   Protocol Fees: ${charlie_payment_summary.get('total_protocol_fees_usdc', 0)} USDC")
+            
+            # Agent-level statistics
+            agent_stats = charlie_payment_summary.get('agent_statistics', {})
+            if agent_stats:
+                rprint(f"\n[bold green]👥 Agent Payment Statistics[/bold green]")
+                for agent, stats in agent_stats.items():
+                    sent = stats.get('sent', 0)
+                    received = stats.get('received', 0)
+                    fees = stats.get('fees_paid', 0)
+                    rprint(f"   {agent}:")
+                    if sent > 0:
+                        rprint(f"     Sent: [red]${sent} USDC[/red] (Fees: ${fees})")
+                    if received > 0:
+                        rprint(f"     Received: [green]${received} USDC[/green]")
+            
+            # Payment history details
+            payment_history = self.charlie_sdk.get_x402_payment_history()
+            if payment_history:
+                rprint(f"\n[bold green]📋 Recent x402 Transactions[/bold green]")
+                for i, payment in enumerate(payment_history[-3:], 1):  # Show last 3
+                    status_color = "green" if payment.get('status') == 'completed' else "red"
+                    rprint(f"   Transaction {i}:")
+                    rprint(f"     Amount: [{status_color}]${payment.get('amount_usdc', 'N/A')} USDC[/{status_color}]")
+                    rprint(f"     Route: {payment.get('from_agent', 'N/A')} → {payment.get('to_agent', 'N/A')}")
+                    rprint(f"     Status: [{status_color}]{payment.get('status', 'N/A')}[/{status_color}]")
+                    rprint(f"     Protocol: x402 (Coinbase Official)")
+                    if payment.get('transaction_hash'):
+                        tx_short = payment['transaction_hash'][:20] + "..."
+                        rprint(f"     TX Hash: {tx_short}")
+            
+            rprint(f"\n[bold green]🎯 x402 Benefits Demonstrated[/bold green]")
+            rprint(f"   ✅ Frictionless agent-to-agent payments")
+            rprint(f"   ✅ Cryptographic payment receipts for PoA")
+            rprint(f"   ✅ Real-time payment monitoring")
+            rprint(f"   ✅ Automatic fee collection (2.5% to ChaosChain)")
+            rprint(f"   ✅ Enhanced evidence packages with payment proofs")
+            rprint(f"   ✅ Production-ready USDC settlement on Base Sepolia")
+            
+        except Exception as e:
+            rprint(f"[yellow]⚠️  x402 monitoring unavailable: {e}[/yellow]")
+            rprint(f"   This is expected if no payments were made in this session")
     
     def _print_final_success_summary(self):
         """Print the beautiful final success summary table with x402 enhancements"""

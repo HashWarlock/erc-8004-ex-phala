@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-Genesis Studio - Validator Agent Runner (Bob)
+Genesis Studio - Validator Agent Runner (Bob) - SDK Version
 
-This script runs the Genesis Studio Validator Agent (Bob), which provides 
-analysis validation services using the complete Genesis Studio stack.
+This script runs the Genesis Studio Validator Agent (Bob) using the ChaosChain SDK,
+which provides analysis validation services using the complete Triple-Verified Stack.
 
 Usage:
-    - Ensure agents are registered by running register_agents.py first.
+    - Install: pip install -i https://test.pypi.org/simple/ chaoschain-sdk==0.1.1
+    - Install dependencies: pip install web3 eth-account requests httpx cryptography pyjwt pydantic python-dotenv rich aiohttp python-dateutil x402 crewai
+    - Install AP2: pip install git+https://github.com/google-agentic-commerce/AP2.git@main
     - Configure your .env file with all API keys.
     - Run the script: python run_validator_agent.py
 """
@@ -14,173 +16,244 @@ Usage:
 import os
 import sys
 import time
+import asyncio
+from datetime import datetime
 from dotenv import load_dotenv
-from web3 import Web3
+from rich import print as rprint
 
-# Add agents directory to path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
-
-from agents.cli_utils import GenesisStudioCLI
-from agents.wallet_manager import GenesisWalletManager
-from agents.ipfs_storage import GenesisIPFSManager
-from agents.validator_agent_genesis import GenesisValidatorAgent
+# Import ChaosChain SDK
+from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
 
 # Load environment variables
 load_dotenv()
 
 def main():
-    """Main Genesis Studio validator agent loop"""
-    cli = GenesisStudioCLI()
-    cli.print_banner()
+    """Main Genesis Studio validator agent loop using ChaosChain SDK"""
     
-    cli.print_phase_header(1, "Validator Agent (Bob)", "Running validation service with Genesis Studio")
+    rprint("[bold blue]🚀 Genesis Studio Validator Agent (Bob) - SDK Version[/bold blue]")
+    rprint("=" * 60)
     
     network = os.getenv('NETWORK', 'base-sepolia')
-    print(f"🌍 Connected to network: {network.upper()}")
+    rprint(f"🌍 Connected to network: {network.upper()}")
 
     try:
-        # Initialize Genesis Studio components
-        cli.print_step(1, "Initializing Genesis Studio components", "in_progress")
-        wallet_manager = GenesisWalletManager()
-        ipfs_manager = GenesisIPFSManager()
-        cli.print_step(1, "Components initialized", "completed")
-
-        # Load Bob's wallet and agent
-        cli.print_step(2, "Loading Bob's AgentKit wallet", "in_progress")
-        bob_wallet = wallet_manager.create_or_load_wallet("Bob")
-        bob_address = wallet_manager.get_wallet_address("Bob")
+        # Initialize Bob using ChaosChain SDK
+        rprint("\n[blue]🔧 Step 1: Initializing Bob with ChaosChain SDK[/blue]")
         
-        bob = GenesisValidatorAgent(
+        bob_sdk = ChaosChainAgentSDK(
+            agent_name="Bob",
             agent_domain=os.getenv('AGENT_DOMAIN_BOB', 'bob.chaoschain-genesis-studio.com'),
-            wallet_address=bob_address,
-            wallet_manager=wallet_manager
+            agent_role=AgentRole.VALIDATOR,
+            network=NetworkConfig.BASE_SEPOLIA,
+            enable_ap2=True,
+            enable_process_integrity=True,
+            enable_payments=True
         )
-        cli.print_step(2, "Bob loaded and ready", "completed")
-
-        if not bob.agent_id:
-            cli.print_error("Bob not registered", "Please run register_agents.py first")
-            return
+        
+        rprint("[green]✅ Bob SDK initialized successfully[/green]")
+        rprint(f"   Agent: {bob_sdk.agent_name}")
+        rprint(f"   Domain: {bob_sdk.agent_domain}")
+        rprint(f"   Wallet: {bob_sdk.wallet_address}")
+        rprint(f"   Payment Methods: {len(bob_sdk.get_supported_payment_methods())}")
+        
+        # Register Bob's identity if not already registered
+        rprint("\n[blue]🔧 Step 2: Registering Bob's identity[/blue]")
+        try:
+            agent_id, tx_hash = bob_sdk.register_identity()
+            rprint(f"[green]✅ Bob registered with Agent ID: {agent_id}[/green]")
+            rprint(f"   Transaction: {tx_hash}")
+        except Exception as e:
+            rprint(f"[yellow]⚠️  Registration: {e}[/yellow]")
+            agent_id = bob_sdk.get_agent_id()
+            if agent_id:
+                rprint(f"[green]✅ Bob already registered with Agent ID: {agent_id}[/green]")
+        
+        # Register validation function with process integrity
+        rprint("\n[blue]🔧 Step 3: Registering validation function with process integrity[/blue]")
+        
+        @bob_sdk.process_integrity.register_function
+        def validate_market_analysis(analysis_data: dict) -> dict:
+            """Validate market analysis with comprehensive scoring"""
+            import random
+            from datetime import datetime
             
-        print(f"✅ Genesis Validator Agent Bob ready!")
-        print(f"   Agent ID: {bob.agent_id}")
-        print(f"   Wallet: {bob.address}")
-        print(f"   Domain: {bob.agent_domain}")
+            # Extract analysis components for validation
+            price_analysis = analysis_data.get('price_analysis', {})
+            technical_analysis = analysis_data.get('technical_analysis', {})
+            recommendations = analysis_data.get('recommendations', {})
+            metadata = analysis_data.get('genesis_studio_metadata', {})
+            
+            # Scoring logic
+            completeness_score = 0
+            if price_analysis: completeness_score += 25
+            if technical_analysis: completeness_score += 25
+            if recommendations: completeness_score += 25
+            if metadata: completeness_score += 25
+            
+            # Accuracy scoring (simulated)
+            accuracy_score = random.randint(80, 95)
+            
+            # Methodology scoring
+            methodology_score = random.randint(85, 95)
+            
+            # Confidence scoring
+            confidence_score = random.randint(80, 90)
+            
+            # Overall score
+            overall_score = round((completeness_score + accuracy_score + methodology_score + confidence_score) / 4)
+            
+            validation_result = {
+                "validation_timestamp": datetime.now().isoformat(),
+                "validator_agent_id": bob_sdk.get_agent_id(),
+                "overall_score": overall_score,
+                "completeness_score": completeness_score,
+                "accuracy_score": accuracy_score,
+                "methodology_score": methodology_score,
+                "confidence_score": confidence_score,
+                "quality_rating": "Excellent" if overall_score >= 90 else "Good" if overall_score >= 80 else "Fair",
+                "validation_summary": f"Analysis shows {overall_score}% quality with comprehensive coverage",
+                "validator": "Bob (ChaosChain SDK)",
+                "validation_details": {
+                    "price_analysis_present": bool(price_analysis),
+                    "technical_analysis_present": bool(technical_analysis),
+                    "recommendations_present": bool(recommendations),
+                    "metadata_present": bool(metadata)
+                }
+            }
+            
+            return validation_result
         
-        # Create event filter for validation requests
-        cli.print_step(3, "Setting up blockchain event listener", "in_progress")
-        event_filter = bob.validation_registry.events.ValidationRequestEvent.create_filter(
-            fromBlock='latest',
-            argument_filters={'agentValidatorId': bob.agent_id}
-        )
-        cli.print_step(3, "Event listener ready", "completed")
+        rprint("[green]✅ Validation function registered with process integrity[/green]")
         
-        print(f"\n👂 Listening for validation requests for Agent ID {bob.agent_id}...")
-        print("Bob is now ready to:")
-        print("• Monitor blockchain for ValidationRequestEvent")
-        print("• Retrieve analysis from IPFS")
-        print("• Perform comprehensive validation")
-        print("• Submit validation responses on-chain")
-        print("• Store validation reports on IPFS")
+        # Create x402 paywall server for validation services
+        rprint("\n[blue]🔧 Step 4: Setting up x402 paywall server[/blue]")
+        try:
+            paywall_server = bob_sdk.create_x402_paywall_server(port=8402)
+            
+            @paywall_server.require_payment(amount=0.5, description="Market Analysis Validation")
+            def validate_analysis_service(analysis_data):
+                """Paid validation service endpoint"""
+                result, proof = asyncio.run(bob_sdk.execute_with_integrity_proof(
+                    "validate_market_analysis",
+                    {"analysis_data": analysis_data},
+                    require_proof=True
+                ))
+                return {
+                    "validation_result": result,
+                    "process_integrity_proof": proof.proof_id if proof else None
+                }
+            
+            rprint("[green]✅ x402 paywall server ready on port 8402[/green]")
+        except Exception as e:
+            rprint(f"[yellow]⚠️  Paywall server setup failed: {e}[/yellow]")
+        
+        # Service loop - Bob provides validation services
+        rprint("\n[blue]🔄 Starting Genesis Studio validation service...[/blue]")
+        rprint("Bob is now ready to:")
+        rprint("• Monitor for validation requests")
+        rprint("• Validate analysis with process integrity")
+        rprint("• Store validation reports on IPFS")
+        rprint("• Receive x402 payments for validation services")
         
         validation_count = 0
 
+        # Simulate validation service loop
         while True:
             try:
-                # Check for new validation requests
-                new_events = event_filter.get_new_entries()
+                rprint(f"\n[bold cyan]--- Validation Service Cycle {validation_count + 1} ---[/bold cyan]")
                 
-                if new_events:
-                    for event in new_events:
+                # Monitor for validation requests (simulated)
+                rprint("[blue]👂 Monitoring for validation requests...[/blue]")
+                time.sleep(10)  # Simulate monitoring
+                
+                # Simulate receiving a validation request
+                if validation_count < 3:  # Limit demo cycles
+                    rprint("[blue]📬 Simulating validation request received...[/blue]")
+                    
+                    # Mock analysis data for validation
+                    mock_analysis = {
+                        "symbol": "BTC",
+                        "price_analysis": {
+                            "current_price": 67500.00,
+                            "24h_change": 2.34
+                        },
+                        "technical_analysis": {
+                            "trend": "Bullish",
+                            "rsi": 58.7
+                        },
+                        "recommendations": {
+                            "short_term": "Hold",
+                            "risk_level": "Medium"
+                        },
+                        "genesis_studio_metadata": {
+                            "confidence_score": 87
+                        }
+                    }
+                    
+                    # Perform validation with process integrity
+                    rprint("[blue]🔍 Performing validation with process integrity...[/blue]")
+                    
+                    result, proof = asyncio.run(bob_sdk.execute_with_integrity_proof(
+                        "validate_market_analysis",
+                        {"analysis_data": mock_analysis},
+                        require_proof=True
+                    ))
+                    
+                    score = result.get('overall_score', 0)
+                    quality = result.get('quality_rating', 'Unknown')
+                    rprint(f"[green]✅ Validation completed: {score}/100 ({quality})[/green]")
+                    rprint(f"   Process Integrity Proof ID: {proof.proof_id if proof else 'N/A'}")
+                    
+                    # Store validation report on IPFS
+                    rprint("[blue]📦 Storing validation report on IPFS...[/blue]")
+                    validation_cid = bob_sdk.store_evidence(result, "validation_report")
+                    
+                    if validation_cid:
+                        gateway_url = bob_sdk.storage_manager.get_clickable_link(validation_cid)
+                        rprint(f"[green]✅ Validation report stored on IPFS[/green]")
+                        rprint(f"   CID: {validation_cid}")
+                        rprint(f"   Gateway: {gateway_url}")
+                    else:
+                        rprint("[red]❌ IPFS storage failed[/red]")
+                    
+                    # Submit validation response on-chain
+                    rprint("[blue]📋 Submitting validation response on-chain...[/blue]")
+                    try:
+                        import hashlib
+                        data_hash = "0x" + hashlib.sha256(str(mock_analysis).encode()).hexdigest()
+                        validation_tx = bob_sdk.submit_validation_response(data_hash, score)
+                        rprint(f"[green]✅ Validation response submitted[/green]")
+                        rprint(f"   Transaction: {validation_tx}")
+                    except Exception as e:
+                        rprint(f"[yellow]⚠️  Validation response failed: {e}[/yellow]")
+                    
                         validation_count += 1
-                        handle_genesis_validation_event(event, bob, ipfs_manager, cli, validation_count)
+                    
+                    rprint(f"\n[green]✅ Validation #{validation_count} completed successfully![/green]")
+                    rprint(f"   Score: {score}/100 ({quality})")
+                    rprint(f"   IPFS Report: {validation_cid}")
                 else:
-                    # Periodic status update
-                    print("🔍 Monitoring for validation requests... (Press Ctrl+C to stop)")
-                
-                time.sleep(10)
+                    rprint("[blue]ℹ️  Demo validation cycles completed[/blue]")
+                    rprint("[yellow]Press Ctrl+C to stop the service.[/yellow]")
+                    time.sleep(30)
 
             except KeyboardInterrupt:
-                print("\n🛑 Validator Agent shutting down.")
+                rprint("\n[yellow]🛑 Validation service interrupted by user.[/yellow]")
                 break
             except Exception as e:
-                cli.print_error(f"Event monitoring error", str(e))
-                print("Continuing to monitor...")
+                rprint(f"[red]❌ Validation cycle {validation_count + 1} failed: {e}[/red]")
+                import traceback
+                traceback.print_exc()
+                rprint("Continuing to monitor...")
                 time.sleep(5)
 
     except KeyboardInterrupt:
-        print("\n🛑 Genesis Validator Agent shutting down.")
+        rprint("\n[yellow]🛑 Genesis Validator Agent shutting down.[/yellow]")
     except Exception as e:
-        cli.print_error("Validator Agent failed to start", str(e))
+        rprint(f"[red]❌ Validator Agent failed to start: {e}[/red]")
+        import traceback
+        traceback.print_exc()
 
-def handle_genesis_validation_event(event, bob: GenesisValidatorAgent, ipfs_manager: GenesisIPFSManager, cli: GenesisStudioCLI, validation_count: int):
-    """Handle a new ValidationRequestEvent with Genesis Studio integration."""
-    
-    print(f"\n🎯 === Validation Request #{validation_count} ===")
-    print(f"📬 New validation request received!")
-    print(f"   Server Agent ID: {event['args']['agentServerId']}")
-    print(f"   Validator Agent ID: {event['args']['agentValidatorId']}")
-    print(f"   Data Hash: {event['args']['dataHash'].hex()}")
-
-    data_hash_hex = event['args']['dataHash'].hex()
-    
-    try:
-        # Step 1: Retrieve analysis from IPFS (simulated - in real scenario we'd have the CID)
-        cli.print_step(1, "Retrieving analysis data from IPFS", "in_progress")
-        # For demo purposes, we'll create mock analysis data
-        # In real scenario, we'd extract CID from the data hash or have it passed differently
-        mock_analysis_data = {
-            "symbol": "BTC",
-            "technical_analysis": {
-                "trend": "Bullish",
-                "support_levels": [65000, 62000],
-                "resistance_levels": [70000, 73000],
-                "rsi": 58.7
-            },
-            "price_analysis": {
-                "current_price": 67500.00,
-                "24h_change": 2.34
-            },
-            "recommendations": {
-                "short_term": "Hold with potential for upside",
-                "risk_level": "Medium"
-            },
-            "genesis_studio_metadata": {
-                "confidence_score": 87,
-                "methodology": "Multi-factor quantitative analysis"
-            }
-        }
-        cli.print_step(1, "Analysis data retrieved", "completed")
-        
-        # Step 2: Perform validation using Genesis Studio AI
-        cli.print_step(2, "Performing comprehensive AI validation", "in_progress")
-        validation_result = bob.validate_analysis(mock_analysis_data)
-        score = validation_result.get("overall_score", 85)
-        quality = validation_result.get("quality_rating", "Good")
-        cli.print_step(2, f"Validation completed: {score}/100 ({quality})", "completed")
-        
-        # Step 3: Store validation report on IPFS
-        cli.print_step(3, "Storing validation report on IPFS", "in_progress")
-        validation_cid = ipfs_manager.store_validation_report(validation_result, bob.agent_id, data_hash_hex)
-        if validation_cid:
-            gateway_url = ipfs_manager.get_clickable_link(validation_cid)
-            cli.print_ipfs_upload("validation_report.json", validation_cid, gateway_url)
-            cli.print_step(3, "Validation report stored on IPFS", "completed")
-        else:
-            cli.print_step(3, "IPFS storage failed", "failed")
-        
-        # Step 4: Submit validation response on-chain
-        cli.print_step(4, "Submitting validation response on-chain", "in_progress")
-        tx_hash = bob.submit_validation_response(data_hash_hex, score)
-        cli.print_validation_response("Bob", score, tx_hash)
-        cli.print_step(4, "Validation response submitted", "completed")
-        
-        print(f"\n✅ Validation #{validation_count} completed successfully!")
-        print(f"   Score: {score}/100 ({quality})")
-        print(f"   IPFS Report: {validation_cid}")
-        print(f"   Transaction: {tx_hash}")
-
-    except Exception as e:
-        cli.print_error(f"Validation #{validation_count} failed", str(e))
 
 
 if __name__ == "__main__":

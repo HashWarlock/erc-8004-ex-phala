@@ -1,20 +1,57 @@
 # ChaosChain Genesis Studio
 
-**The world's first production ready Triple-Verified Stack for trustless AI agent commerce.**
+[![PyPI version](https://badge.fury.io/py/chaoschain-sdk.svg)](https://badge.fury.io/py/chaoschain-sdk)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository demonstrates the complete lifecycle of autonomous commerce, powered by ChaosChain's revolutionary Triple-Verified Stack: **Google AP2 Intent Verification** + **ChaosChain Process Integrity** + **ChaosChain Adjudication**. See AI agents establish on-chain identity via ERC-8004, perform verifiable work with cryptographic execution proofs, receive dual-protocol payments (AP2 + A2A-x402), and create monetizable IP assets.
+This repository demonstrates the complete lifecycle of autonomous commerce, powered by ChaosChain's SDK that provides revolutionary Triple-Verified Stack: **Google AP2 Intent Verification** + **ChaosChain Process Integrity** + **ChaosChain Adjudication**. See AI agents establish on-chain identity via ERC-8004, perform verifiable work with cryptographic execution proofs, receive dual-protocol payments (AP2 + A2A-x402), and create monetizable IP assets.
 
-**Production-Ready Features:**
-- **RSA256 JWT Signing** for enterprise-grade security
-- **Google's Official AP2 Library** with real cryptographic verification
-- **A2A-x402 Extension** for seamless crypto payments
-- **Dynamic Configuration** for multi-environment deployment
-- **Secure Key Management** with automatic RSA keypair generation
+This repository demonstrates how to build sophisticated AI agent workflows/marketplaces (Studios) using the [ChaosChain SDK](https://pypi.org/project/chaoschain-sdk/). Genesis Studio showcases a complete multi-agent system where AI agents perform smart shopping analysis, validate results, and handle payments using x402 crypto payments - all with optional storage solutions and no vendor lock-in.
 
-**ChaosChain owns 2 out of 3 verification layers in the stack!**
+## Quick Start with ChaosChain SDK
 
+```bash
+# Install the ChaosChain SDK
+pip install chaoschain-sdk
 
-## The Vision: Triple-Verified Stack for Trustless AI Commerce
+# Clone this example implementation
+git clone https://github.com/ChaosChain/chaoschain-genesis-studio.git
+cd chaoschain-genesis-studio
+
+# Run the Genesis Studio demo
+python genesis_studio.py
+```
+
+**What you'll see:**
+- ✅ **Multi-Agent Creation**: Server, Validator, and Client agents working together
+- ✅ **x402 Crypto Payments**: Native cryptocurrency payments using Coinbase's x402 protocol
+- ✅ **Process Integrity**: Verifiable AI agent execution with cryptographic proofs
+- ✅ **Optional Storage**: Works with Pinata, local IPFS, or completely vendor-free
+- ✅ **ERC-8004 Integration**: On-chain identity and reputation management
+
+## 📋 Table of Contents
+
+- [Quick Start with ChaosChain SDK](#-quick-start-with-chaoschain-sdk)
+- [What is Genesis Studio?](#-what-is-genesis-studio)
+- [Installation](#️-installation)
+- [Core Features](#-core-features)
+- [SDK Usage Examples](#-sdk-usage-examples)
+- [Architecture](#️-architecture)
+- [Configuration](#-configuration)
+- [Running the Demo](#-running-the-demo)
+- [Contributing](#-contributing)
+
+## What is Genesis Studio?
+
+Genesis Studio is a **comprehensive example implementation** that demonstrates the full capabilities of the ChaosChain SDK. It showcases how to build production-ready AI agent systems with:
+
+- **Multi-Agent Orchestration**: Server agents, validator agents, and client agents working together
+- **Crypto Payments**: Native x402 payments using Coinbase's official protocol
+- **Process Integrity**: Verifiable execution with cryptographic proofs
+- **Flexible Storage**: Optional storage with Pinata, local IPFS, or vendor-free operation
+- **On-Chain Identity**: ERC-8004 identity and reputation management
+
+### The Vision: Triple-Verified Stack for Trustless AI Commerce
 
 This is more than just an example of ERC-8004. It's a working blueprint for the **Triple-Verified Stack** - the world's first comprehensive verification system for AI agent commerce:
 
@@ -117,94 +154,348 @@ graph TD
 -   **Settlement:** Official **USDC** on **Base Sepolia** for realistic, on-chain settlement
 -   **IP Layer:** [Story Protocol](https://www.story.foundation/) via [Crossmint API](https://docs.crossmint.com/solutions/story-protocol/introduction) for turning work into monetizable IP
 
----
-
-## Quick Start
+## Installation
 
 ### Prerequisites
-1.  **Python 3.8+** with `pip` and `cryptography` library support.
-2.  **API Keys & Endpoints:**
-    -   A **Base Sepolia RPC URL**.
-    -   An **Operator Private Key** (a fresh wallet with Base Sepolia ETH for gas and USDC for payments).
-    -   A **Pinata JWT** for IPFS uploads.
-    -   A **Crossmint API Key** for the Story Protocol integration.
-    -   **Production Dependencies** (Google AP2, cryptography, A2A-x402 - automatically installed via requirements.txt).
+- **Python 3.8+** with pip
+- **Base Sepolia RPC URL** (for blockchain connectivity)
+- **Optional**: Pinata JWT for IPFS storage (can run vendor-free without it)
 
-### Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/ChaosChain/chaoschain-genesis-studio.git
-    cd chaoschain-genesis-studio
-    ```
-
-2.  **Install Python dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install all production dependencies including:
-    - Google's official AP2 library
-    - Cryptography library for RSA256 JWT signing
-    - PyJWT for token handling
-    - All other required packages
-
-3.  **Test multi-payment capabilities:**
-    ```bash
-    # Verify W3C Payment Request API compliance
-    python -c "
-    from agents.chaoschain_agent_sdk import ChaosChainAgentSDK
-    sdk = ChaosChainAgentSDK('TestAgent', 'test.com', 'server', 'base-sepolia', enable_ap2=True)
-    methods = sdk.get_supported_payment_methods()
-    print(f'✅ {len(methods)} W3C payment methods ready:')
-    for method in methods:
-        name = method.split('/')[-1] if '/' in method else method
-        print(f'  • {name}')
-    "
-    ```
-
-4.  **Configure your environment:**
-    ```bash
-    cp .env.example .env
-    cp genesis_wallets.json.example genesis_wallets.json
-    ```
-    Now, edit the `.env` file and add your RPC URL, private key, and API keys.
-    
-    **SECURITY WARNING**: Never commit `genesis_wallets.json` or any file containing private keys to Git!
-    
-4.  **Security Setup:**
-    The system will automatically generate RSA keypairs for production-grade JWT signing on first run. Keys are stored securely in the `./keys/` directory (excluded from git).
-
-### Run the Demo
-
-**⚠️ IMPORTANT: Fund Wallets First**
-
-Before running the demo, you must fund the agent wallets with ETH for gas fees:
+### Step 1: Install the ChaosChain SDK
 
 ```bash
-# 1. Check wallet funding status
-python fix_and_run_demo.py
-
-# 2. Fund wallets using Base Sepolia faucet
-# Visit: https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet
-# Fund each address shown in the funding status table
-
-# 3. Run the demo (after funding)
-python genesis_studio.py
-
-# OR use the safe runner that checks funding first
-python fix_and_run_demo.py
+# Install from PyPI
+pip install chaoschain-sdk
 ```
 
-**Wallet Addresses (fund these with Base Sepolia ETH):**
-- Alice: `0xB7DE5621f92e3bE0eD0c846CAa37cA7939F63b31`
-- Bob: `0x5998610d644df828Aa8073f12CBb05337c8f3945`  
-- Charlie: `0x4E9970f764d2908C6922C834a60E8DF99fAc0d46`
+### Step 2: Clone Genesis Studio Example
 
-Each wallet needs at least **0.001 ETH** for gas fees.
+```bash
+# Clone this example repository
+git clone https://github.com/ChaosChain/chaoschain-genesis-studio.git
+cd chaoschain-genesis-studio
+```
 
----
+### Step 3: Configure Environment (Optional)
 
-## The Triple-Verified Stack Lifecycle in Action
+```bash
+# Create environment file (optional - works without it)
+cp .env.example .env
+```
+
+Edit `.env` to add your configuration:
+```bash
+# Required
+NETWORK=base-sepolia
+BASE_SEPOLIA_RPC_URL=https://base-sepolia.g.alchemy.com/v2/your-key
+
+# Optional - for enhanced features
+PINATA_JWT=your-pinata-jwt  # For IPFS storage
+PINATA_GATEWAY=https://gateway.pinata.cloud
+
+# Treasury (uses default if not set)
+TREASURY_ADDRESS=0x20E7B2A2c8969725b88Dd3EF3a11Bc3353C83F70
+```
+
+### Step 4: Test the SDK
+
+```bash
+# Quick SDK test
+python -c "
+from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
+
+# Create a test agent
+agent = ChaosChainAgentSDK(
+    agent_name='TestAgent',
+    agent_domain='test.example.com',
+    agent_role=AgentRole.CLIENT,
+    network=NetworkConfig.BASE_SEPOLIA
+)
+
+print(f'✅ SDK working! Agent wallet: {agent.wallet_address}')
+"
+```
+
+## Core Features
+
+The ChaosChain SDK provides everything you need to build production-ready AI agents:
+
+### Multi-Agent Support
+- **Server Agents**: Provide services and execute tasks
+- **Validator Agents**: Assess and validate work quality  
+- **Client Agents**: Request services and make payments
+- **Automatic Wallet Management**: Each agent gets a unique wallet
+
+### Native x402 Payments
+- **Coinbase x402 Protocol**: Official implementation for crypto payments
+- **Multi-Payment Support**: 5 different payment methods available
+- **Automatic Fee Collection**: Built-in treasury fee management
+- **Payment Receipts**: Cryptographic proof of all transactions
+
+### Process Integrity
+- **Verifiable Execution**: Cryptographic proofs of correct code execution
+- **Code Hash Verification**: Ensure agents run the intended code
+- **Evidence Storage**: Permanent storage of execution proofs
+
+### Flexible Storage Options
+- **Pinata Integration**: Cloud IPFS storage for enhanced features
+- **Local IPFS**: Run your own IPFS node for full control
+- **Vendor-Free Mode**: Works without any external storage services
+- **Graceful Fallbacks**: Clear messaging when storage is unavailable
+
+### ERC-8004 Integration
+- **On-Chain Identity**: Register agents on blockchain
+- **Reputation System**: Build trust through verified work
+- **Validation Registry**: Quality assessment and scoring
+
+##  SDK Usage Examples
+
+### Basic Agent Creation
+
+```python
+from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
+
+# Create a server agent
+server = ChaosChainAgentSDK(
+    agent_name="MyServerAgent",
+    agent_domain="server.myapp.com",
+    agent_role=AgentRole.SERVER,
+    network=NetworkConfig.BASE_SEPOLIA,
+    enable_process_integrity=True  # Enable verifiable execution
+)
+
+print(f"Server agent created: {server.wallet_address}")
+```
+
+### x402 Crypto Payments
+
+```python
+# Client creates payment request
+payment_request = client.create_x402_payment_request(
+    cart_id="service_001",
+    total_amount=10.0,
+    currency="USDC",
+    items=[{"name": "AI Analysis Service", "price": 10.0}],
+    settlement_address=server.wallet_address
+)
+
+print(f"Payment request created: {payment_request['cart_id']}")
+```
+
+### Multi-Agent Workflow
+
+```python
+# Create three agents for a complete workflow
+alice = ChaosChainAgentSDK(
+    agent_name="Alice",
+    agent_domain="alice.myapp.com", 
+    agent_role=AgentRole.SERVER,
+    network=NetworkConfig.BASE_SEPOLIA,
+    enable_process_integrity=True
+)
+
+bob = ChaosChainAgentSDK(
+    agent_name="Bob",
+    agent_domain="bob.myapp.com",
+    agent_role=AgentRole.VALIDATOR, 
+    network=NetworkConfig.BASE_SEPOLIA,
+    enable_process_integrity=True
+)
+
+charlie = ChaosChainAgentSDK(
+    agent_name="Charlie",
+    agent_domain="charlie.myapp.com",
+    agent_role=AgentRole.CLIENT,
+    network=NetworkConfig.BASE_SEPOLIA
+)
+
+# Agents can now interact, make payments, and verify work
+```
+
+### Storage Configuration
+
+```python
+# With Pinata (enhanced features)
+agent_with_storage = ChaosChainAgentSDK(
+    agent_name="StorageAgent",
+    agent_domain="storage.myapp.com",
+    agent_role=AgentRole.SERVER,
+    network=NetworkConfig.BASE_SEPOLIA,
+    enable_process_integrity=True  # Will use Pinata if configured
+)
+
+# Vendor-free mode (no external dependencies)
+agent_vendor_free = ChaosChainAgentSDK(
+    agent_name="FreeAgent", 
+    agent_domain="free.myapp.com",
+    agent_role=AgentRole.CLIENT,
+    network=NetworkConfig.BASE_SEPOLIA
+    # Works without any storage configuration
+)
+```
+
+## Running the Demo
+
+Genesis Studio demonstrates a complete multi-agent workflow using the ChaosChain SDK:
+
+### Option 1: Quick Demo (Recommended)
+
+```bash
+# Run the Genesis Studio demo
+python genesis_studio.py
+```
+
+The demo will:
+1. **Create three AI agents** (Alice, Bob, Charlie) using the ChaosChain SDK
+2. **Register them on-chain** using ERC-8004 identity registry
+3. **Execute a smart shopping workflow** with process integrity
+4. **Handle x402 crypto payments** between agents
+5. **Validate results** and build reputation scores
+6. **Store evidence** (with optional IPFS integration)
+
+### Option 2: Vendor-Free Demo
+
+```bash
+# Run without any external storage dependencies
+PINATA_JWT="" python genesis_studio.py
+```
+
+This demonstrates the SDK's vendor-free capabilities - everything works without external services.
+
+### Option 3: With Enhanced Storage
+
+```bash
+# Set up Pinata for enhanced IPFS features
+export PINATA_JWT="your-pinata-jwt"
+export PINATA_GATEWAY="https://gateway.pinata.cloud"
+python genesis_studio.py
+```
+
+### What You'll See
+
+The demo showcases a complete AI agent workflow:
+
+```
+🚀 ChaosChain Agent SDK initialized for Alice (server)
+🚀 ChaosChain Agent SDK initialized for Bob (validator)  
+🚀 ChaosChain Agent SDK initialized for Charlie (client)
+
+✅ Smart shopping analysis completed
+💳 x402 payment processed: 1.7 USDC
+🔍 Validation completed: 97/100 score
+📦 Evidence stored on IPFS (or in-memory if vendor-free)
+```
+
+### Funding Wallets (Optional)
+
+For on-chain transactions, you may need to fund the generated wallets:
+
+```bash
+# Check wallet addresses
+python -c "
+from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
+
+agents = ['Alice', 'Bob', 'Charlie']
+for name in agents:
+    agent = ChaosChainAgentSDK(name, f'{name.lower()}.test.com', AgentRole.CLIENT, NetworkConfig.BASE_SEPOLIA)
+    print(f'{name}: {agent.wallet_address}')
+"
+
+# Fund each address with Base Sepolia ETH from:
+# https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet
+```
+
+## Architecture
+
+Genesis Studio demonstrates how to build sophisticated AI agent systems using the ChaosChain SDK. The architecture showcases:
+
+### Multi-Agent System Design
+
+```mermaid
+graph TD
+    subgraph "ChaosChain SDK Integration"
+        A[Client Agent - Charlie] --> B[Server Agent - Alice]
+        B --> C[Validator Agent - Bob]
+        A --> C
+    end
+    
+    subgraph "Payment Layer"
+        D[x402 Payment Requests] --> E[USDC Settlement]
+        E --> F[Treasury Fee Collection]
+    end
+    
+    subgraph "Storage Layer"
+        G[Pinata IPFS] --> H[Local IPFS]
+        H --> I[Vendor-Free Mode]
+    end
+    
+    subgraph "Blockchain Layer"
+        J[ERC-8004 Identity] --> K[Reputation Registry]
+        K --> L[Validation Registry]
+    end
+    
+    B --> D
+    B --> G
+    B --> J
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style E fill:#fff3e0
+```
+
+### SDK Components Used
+
+- **`ChaosChainAgentSDK`**: Core agent creation and management
+- **`NetworkConfig`**: Blockchain network configuration
+- **`AgentRole`**: Agent type specification (SERVER, VALIDATOR, CLIENT)
+- **Process Integrity**: Verifiable execution with cryptographic proofs
+- **x402 Payment Manager**: Native crypto payment handling
+- **Storage Manager**: Flexible storage with multiple backends
+
+### Key Design Patterns
+
+1. **Agent Factory Pattern**: Consistent agent creation using the SDK
+2. **Payment Orchestration**: Automated payment flows between agents
+3. **Evidence Management**: Structured storage of work proofs and validations
+4. **Graceful Degradation**: Fallback modes when external services unavailable
+
+## Configuration
+
+Genesis Studio supports flexible configuration through environment variables:
+
+### Required Configuration
+
+```bash
+# Blockchain connectivity
+NETWORK=base-sepolia
+BASE_SEPOLIA_RPC_URL=https://base-sepolia.g.alchemy.com/v2/your-key
+```
+
+### Optional Configuration
+
+```bash
+# Enhanced IPFS storage
+PINATA_JWT=your-pinata-jwt
+PINATA_GATEWAY=https://gateway.pinata.cloud
+
+# Custom treasury (uses default if not set)
+TREASURY_ADDRESS=0x20E7B2A2c8969725b88Dd3EF3a11Bc3353C83F70
+
+# Agent configuration
+ENABLE_PROCESS_INTEGRITY=true
+ENABLE_AP2=false  # Optional Google AP2 integration
+```
+
+### Storage Options
+
+| Option | Description | Requirements |
+|--------|-------------|--------------|
+| **Pinata** | Cloud IPFS with enhanced features | `PINATA_JWT` |
+| **Local IPFS** | Self-hosted IPFS node | Local IPFS daemon |
+| **Vendor-Free** | No external storage dependencies | None |
+
+## The Triple-Verified Stack in Action
 
 The demo script executes a complete, four-phase Triple-Verified Stack workflow:
 
@@ -577,46 +868,102 @@ ChaosChain's revolutionary **Triple-Verified Stack** combines three verification
 - **Sustainable Economics**: Revenue scales with network usage and verification volume
 - **Triple Value Capture**: Fees from intent verification, process integrity, and adjudication services
 
-## Contributing & Next Steps
+##  Contributing
 
-This prototype demonstrates the world's first **Triple-Verified Stack** for trustless AI agent commerce. The immediate next step is to finalize the Story Protocol integration for IP monetization.
+Genesis Studio is an open-source example implementation of the ChaosChain SDK. We welcome contributions that help demonstrate the SDK's capabilities!
 
-### Current Status:
-- ✅ **Production-Ready Triple-Verified Stack**: Google AP2 + ChaosChain Process Integrity + ChaosChain Adjudication
-- ✅ **W3C Payment Compliance**: Full Payment Request API with 5 payment methods (cards, Google Pay, Apple Pay, PayPal, crypto)
-- ✅ **Enterprise Security**: RSA256 JWT signing, secure key management, and cryptographic verification
-- ✅ **Google AP2 Integration**: Official library with W3C Payment Request API compliance
-- ✅ **Multi-Payment System**: Traditional + crypto payments in unified interface
-- ✅ **A2A-x402 Extension**: Full implementation of Google's crypto payment specification
-- ✅ **ERC-8004 Foundation**: Identity, reputation, and validation registries
-- ✅ **Dynamic Configuration**: Multi-environment deployment with secure configuration management
-- ✅ **Process Integrity**: Verifiable execution with cryptographic proofs
-- ✅ **Enhanced Evidence**: Complete audit trails with JWT tokens and A2A-x402 receipts
-- ✅ **Unified Agent SDK**: One-line integration for developers with production-grade security
-- ✅ **Protocol Revenue**: Automatic fee collection to ChaosChain treasury
-- ✅ **Smart Shopping Demo**: Real-world use case with multi-payment options and complete verification
-- 🚧 **Story Protocol IP Monetization**: Final integration in progress
+### Ways to Contribute
 
-### What Makes This Special
-**World's First Production-Ready Triple-Verified Stack**: The only system that verifies intent, execution, AND outcome with enterprise-grade security  
-**Complete W3C Payment Compliance**: Full Payment Request API with 5 payment methods - the most comprehensive payment system in the AI agent ecosystem  
-**Google Integration**: Official AP2 library with RSA256 JWT signing and A2A-x402 crypto payments  
-**Universal Payment Support**: Traditional (cards, wallets) + crypto payments in one unified system  
-**ChaosChain Owns 2/3 Layers**: Strategic positioning in the verification ecosystem  
-**Enterprise Security**: RSA keypair generation, secure key storage, and production-grade cryptography  
-**Production Ready**: Complete working prototype with real payments, verifiable proofs, and dynamic configuration  
-**Developer Friendly**: Simple SDK abstracts all complexity while maintaining security  
-**Revenue Generating**: Built-in protocol fees create sustainable economics  
+1. **Improve Examples**: Add new agent workflows and use cases
+2. **Documentation**: Enhance code comments and usage examples  
+3. **Testing**: Add test cases for different SDK configurations
+4. **Bug Reports**: Report issues with the demo or SDK integration
+5. **Feature Requests**: Suggest new SDK features to showcase
 
-### Next Steps
-1. **Story Protocol Integration**: Complete IP monetization flywheel
-2. **Multi-Chain Support**: Expand beyond Base Sepolia
-3. **Advanced Verification**: More sophisticated process integrity checks
-4. **Studio Ecosystem**: Vertical-specific agent marketplaces
-5. **Enterprise Integration**: B2B agent commerce solutions
+### Development Setup
 
-Contributions, bug reports, and ideas are highly welcome. Please open an issue or submit a pull request.
+```bash
+# Fork and clone the repository
+git clone https://github.com/your-username/chaoschain-genesis-studio.git
+cd chaoschain-genesis-studio
+
+# Install the ChaosChain SDK
+pip install chaoschain-sdk
+
+# Install development dependencies (if any)
+pip install -r requirements-dev.txt  # If it exists
+
+# Run the demo to test your setup
+python genesis_studio.py
+```
+
+### Contribution Guidelines
+
+- **Focus on SDK Usage**: Examples should showcase ChaosChain SDK capabilities
+- **Keep it Simple**: New examples should be easy to understand and run
+- **Document Everything**: Add clear comments explaining SDK usage patterns
+- **Test Thoroughly**: Ensure examples work in both vendor-free and enhanced modes
+
+### Reporting Issues
+
+When reporting issues, please include:
+
+- **SDK Version**: `pip show chaoschain-sdk`
+- **Python Version**: `python --version`
+- **Environment**: Operating system and configuration
+- **Error Messages**: Full error output and stack traces
+- **Reproduction Steps**: Clear steps to reproduce the issue
+
+### Feature Requests
+
+We're always looking for new ways to showcase the SDK! Consider contributing examples for:
+
+- **Different Agent Types**: New agent roles and workflows
+- **Payment Patterns**: Creative uses of x402 payments
+- **Storage Integrations**: Examples with different storage backends
+- **Multi-Chain Support**: Examples on different blockchain networks
+
+##  Additional Resources
+
+### ChaosChain SDK Documentation
+- **PyPI Package**: [https://pypi.org/project/chaoschain-sdk/](https://pypi.org/project/chaoschain-sdk/)
+- **SDK Repository**: [https://github.com/ChaosChain/chaoschain](https://github.com/ChaosChain/chaoschain)
+- **Documentation**: [https://docs.chaoscha.in/sdk/](https://docs.chaoscha.in/sdk/)
+
+### Related Technologies
+- **x402 Protocol**: [https://www.x402.org/](https://www.x402.org/)
+- **ERC-8004 Standard**: [https://github.com/ChaosChain/trustless-agents-erc-ri](https://github.com/ChaosChain/trustless-agents-erc-ri)
+- **Base Sepolia**: [https://docs.base.org/](https://docs.base.org/)
+- **IPFS**: [https://docs.ipfs.tech/](https://docs.ipfs.tech/)
+
+### Community
+- **Discord**: Join our developer community
+- **Twitter**: Follow [@ChaosChainLabs](https://twitter.com/ChaosChainLabs) for updates
+- **GitHub**: Star the repository and watch for updates
 
 ---
 
-**Built with ❤️ for the future of autonomous commerce.**
+## What's Next?
+
+Genesis Studio demonstrates the core capabilities of the ChaosChain SDK. Here are some ideas for what you can build next:
+
+### Beginner Projects
+- **Simple Payment Bot**: Agent that handles basic x402 payments
+- **Validation Service**: Agent that validates and scores different types of work
+- **Storage Demo**: Showcase different storage backend integrations
+
+### Intermediate Projects  
+- **Multi-Chain Agents**: Agents operating across different blockchain networks
+- **Reputation System**: Build agent reputation through validated work history
+- **Payment Gateway**: Service that handles multiple payment methods
+
+### Advanced Projects
+- **Agent Marketplace**: Platform where agents can discover and hire each other
+- **Verification Network**: Distributed network of validator agents
+- **Enterprise Integration**: B2B agent commerce solutions
+
+**Ready to build the future of AI agent commerce? Start with `pip install chaoschain-sdk`!** 🚀
+
+---
+
+**Built with ❤️ using the ChaosChain SDK**

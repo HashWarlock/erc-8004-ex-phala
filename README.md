@@ -29,7 +29,7 @@ python genesis_studio.py
 - ✅ **Optional Storage**: Works with Pinata, local IPFS, or completely vendor-free
 - ✅ **ERC-8004 Integration**: On-chain identity and reputation management
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Quick Start with ChaosChain SDK](#-quick-start-with-chaoschain-sdk)
 - [What is Genesis Studio?](#-what-is-genesis-studio)

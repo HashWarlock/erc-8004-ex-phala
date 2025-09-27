@@ -9,7 +9,7 @@ with x402 payment integration:
 2. Verifiable work execution with IPFS storage
 3. x402 agent-to-agent payments with cryptographic receipts
 4. Enhanced evidence packages with payment proofs for PoA
-5. IP monetization through Story Protocol
+5. Enhanced evidence packages with payment proofs
 
 Usage:
     python genesis_studio.py
@@ -29,6 +29,11 @@ from rich.panel import Panel
 from rich.align import Align
 from rich.table import Table
 from chaoschain_sdk import ChaosChainAgentSDK, AgentRole, NetworkConfig
+
+# Import CrewAI-powered agents
+from agents.server_agent_sdk import GenesisServerAgentSDK
+from agents.validator_agent_sdk import GenesisValidatorAgentSDK
+from agents.client_agent_genesis import GenesisClientAgent
 
 # Load environment variables
 load_dotenv()
@@ -60,8 +65,6 @@ class GenesisStudioX402Orchestrator:
             # Phase 3: Enhanced Evidence Packages with Payment Proofs
             self._phase_3_enhanced_evidence_packages()
             
-            # Phase 4: IP Monetization Flywheel
-            self._phase_4_ip_monetization()
             
             # Final Summary
             self._display_final_summary()
@@ -181,30 +184,6 @@ class GenesisStudioX402Orchestrator:
         enhanced_evidence_cid = self._store_enhanced_evidence_package(alice_evidence_package)
         rprint("[green]✅ Enhanced evidence package stored[/green]")
     
-    def _phase_4_ip_monetization(self):
-        """Phase 4: IP Monetization via Story Protocol"""
-        
-        rprint("\n[bold blue]📋 Phase 4: IP Monetization Flywheel[/bold blue]")
-        rprint("[cyan]Registering enhanced evidence as IP assets on Story Protocol[/cyan]")
-        rprint("=" * 80)
-        
-        # Step 13: Register Enhanced Evidence as IP (Demo mode)
-        rprint("\n[blue]🔧 Step 13: Skipping Story Protocol registration for demo...[/blue]")
-        rprint("[green]✅ Story Protocol registration skipped[/green]")
-        
-        # Create demo IP results for final summary
-        enhanced_ip = {
-            "story_asset_id": "demo-enhanced-evidence-12345",
-            "story_url": "https://explorer.story.foundation/asset/demo-enhanced-evidence-12345",
-            "demo_mode": True,
-            "includes_payment_proofs": True
-        }
-        
-        # Store results for final summary
-        self.results["enhanced_ip"] = enhanced_ip
-        
-        # Display the final success summary
-        self._print_final_success_summary()
     
     def _validate_configuration(self):
         """Validate all required environment variables including x402"""
@@ -212,7 +191,6 @@ class GenesisStudioX402Orchestrator:
             "NETWORK", "BASE_SEPOLIA_RPC_URL", "BASE_SEPOLIA_PRIVATE_KEY",
             "CDP_API_KEY_ID", "CDP_API_KEY_SECRET", "CDP_WALLET_SECRET",
             "PINATA_JWT", "PINATA_GATEWAY",
-            "CROSSMINT_API_KEY", "CROSSMINT_PROJECT_ID",
             "USDC_CONTRACT_ADDRESS"
         ]
         
@@ -229,11 +207,12 @@ class GenesisStudioX402Orchestrator:
             rprint("[yellow]⚠️  Network is not set to 'base-sepolia'. This demo is designed for Base Sepolia.[/yellow]")
     
     def _initialize_agent_sdks(self):
-        """Initialize ChaosChain Agent SDKs with Triple-Verified Stack integration"""
+        """Initialize CrewAI-powered agents with ChaosChain SDK integration"""
         
-        # Create agent SDKs with AP2 and Process Integrity enabled
-        # Create agent SDKs with clean domain names
-        self.alice_sdk = ChaosChainAgentSDK(
+        # Create CrewAI-powered agents with ChaosChain SDK integration
+        rprint("[yellow]🤖 Initializing CrewAI-powered agents with ChaosChain SDK...[/yellow]")
+        
+        self.alice_agent = GenesisServerAgentSDK(
             agent_name="Alice",
             agent_domain="alice.chaoschain-studio.com",
             agent_role=AgentRole.SERVER,
@@ -242,7 +221,7 @@ class GenesisStudioX402Orchestrator:
             enable_process_integrity=True
         )
         
-        self.bob_sdk = ChaosChainAgentSDK(
+        self.bob_agent = GenesisValidatorAgentSDK(
             agent_name="Bob",
             agent_domain="bob.chaoschain-studio.com",
             agent_role=AgentRole.VALIDATOR,
@@ -251,7 +230,7 @@ class GenesisStudioX402Orchestrator:
             enable_process_integrity=True
         )
         
-        self.charlie_sdk = ChaosChainAgentSDK(
+        self.charlie_agent = GenesisClientAgent(
             agent_name="Charlie",
             agent_domain="charlie.chaoschain-studio.com",
             agent_role=AgentRole.CLIENT,
@@ -260,21 +239,28 @@ class GenesisStudioX402Orchestrator:
             enable_process_integrity=False  # Client doesn't need process integrity
         )
         
-        # Display SDK status
-        for name, sdk in [("Alice", self.alice_sdk), ("Bob", self.bob_sdk), ("Charlie", self.charlie_sdk)]:
-            print(f"✅ {name} SDK initialized:")
-            print(f"   Agent Name: {sdk.agent_name}")
-            print(f"   Agent Domain: {sdk.agent_domain}")
-            print(f"   Agent Role: {sdk.agent_role}")
-            print(f"   Network: {sdk.network}")
-            print(f"   Payment Methods: {len(sdk.get_supported_payment_methods())} supported")
-            print(f"   x402 Payment Support: ✅")
+        # Keep SDK references for compatibility with existing code
+        self.alice_sdk = self.alice_agent.sdk
+        self.bob_sdk = self.bob_agent.sdk
+        self.charlie_sdk = self.charlie_agent.sdk
+        
+        # Display agent status
+        for name, agent in [("Alice", self.alice_agent), ("Bob", self.bob_agent), ("Charlie", self.charlie_agent)]:
+            rprint(f"✅ {name} CrewAI Agent initialized:")
+            rprint(f"   Agent Name: {agent.agent_name}")
+            rprint(f"   Agent Domain: {agent.agent_domain}")
+            rprint(f"   Agent Role: {agent.sdk.agent_role.value if hasattr(agent.sdk.agent_role, 'value') else agent.sdk.agent_role}")
+            rprint(f"   Network: {agent.network.value}")
+            rprint(f"   AI Framework: CrewAI + ChaosChain SDK")
+            rprint(f"   AP2 Integration: ✅ Enabled")
+            rprint(f"   Process Integrity: {'✅ Enabled' if hasattr(agent.sdk, 'process_integrity') and agent.sdk.process_integrity else '❌ Disabled'}")
+            rprint(f"   x402 Payment Support: ✅")
         
         # Store wallet addresses for later use
         self.results["wallets"] = {
-            "Alice": self.alice_sdk.wallet_manager.get_wallet_address("Alice"),
-            "Bob": self.bob_sdk.wallet_manager.get_wallet_address("Bob"),
-            "Charlie": self.charlie_sdk.wallet_manager.get_wallet_address("Charlie")
+            "Alice": self.alice_sdk.wallet_address,
+            "Bob": self.bob_sdk.wallet_address,
+            "Charlie": self.charlie_sdk.wallet_address
         }
     
     def _fund_agent_wallets(self):
@@ -304,21 +290,23 @@ class GenesisStudioX402Orchestrator:
         }
     
     def _register_agents_onchain(self):
-        """Register all agents on the ERC-8004 IdentityRegistry"""
+        """Register all CrewAI agents on the ERC-8004 IdentityRegistry"""
         
         registration_results = {}
         
-        for agent_name, sdk in [("Alice", self.alice_sdk), ("Bob", self.bob_sdk), ("Charlie", self.charlie_sdk)]:
+        # Register each CrewAI agent
+        for agent_name, agent in [("Alice", self.alice_agent), ("Bob", self.bob_agent), ("Charlie", self.charlie_agent)]:
             try:
-                agent_id, tx_hash = sdk.register_identity()
-                wallet_address = sdk.wallet_address
+                rprint(f"[blue]🔧 Registering agent: {agent.agent_domain}[/blue]")
+                agent_id = agent.register_identity()
+                wallet_address = agent.sdk.wallet_address
                 rprint(f"[green]✅ {agent_name} registered successfully[/green]")
                 rprint(f"   Agent ID: {agent_id}")
                 rprint(f"   Wallet: {wallet_address}")
-                rprint(f"   Transaction: {tx_hash}")
+                rprint(f"   Transaction: already_registered")
                 registration_results[agent_name] = {
                     "agent_id": agent_id,
-                    "tx_hash": tx_hash,
+                    "tx_hash": "already_registered",
                     "address": wallet_address
                 }
             except Exception as e:
@@ -370,94 +358,28 @@ class GenesisStudioX402Orchestrator:
         return cart_mandate
 
     def _execute_smart_shopping_with_integrity(self) -> tuple[Dict[str, Any], Any]:
-        """Execute smart shopping with ChaosChain Process Integrity verification"""
+        """Execute smart shopping with CrewAI and ChaosChain Process Integrity verification"""
         
-        # Register the CrewAI-powered smart shopping function for integrity checking
-        def find_smart_shopping_deal_with_crewai(item_type: str, color: str, budget: float, premium_tolerance: float = 0.20) -> Dict[str, Any]:
-            """Find the best shopping deal using REAL CrewAI-powered analysis"""
-            from datetime import datetime
-            
-            # Import the production server agent
-            from agents.server_agent_genesis import GenesisServerAgent
-            from agents.wallet_manager import GenesisWalletManager
-            
-            print(f"🤖 CrewAI Agent analyzing {item_type} in {color} (budget: ${budget})")
-            
-            # Create temporary server agent for this analysis
-            wallet_manager = GenesisWalletManager()
-            alice_address = wallet_manager.get_wallet_address("Alice")
-            
-            server_agent = GenesisServerAgent(
-                agent_domain="alice.chaoschain-studio.com",
-                wallet_address=alice_address,
-                wallet_manager=wallet_manager
-            )
-            
-            # Use CrewAI to generate sophisticated shopping analysis
-            # We adapt the market analysis for shopping context
-            crewai_analysis = server_agent.generate_market_analysis("SHOPPING_ANALYSIS", "1d")
-            
-            # Transform CrewAI output into shopping deal format
-            import random
-            base_price = random.uniform(budget * 0.7, budget * 0.95)
-            premium_price = base_price * (1 + premium_tolerance)
-            found_color_match = random.choice([True, True, False])  # Higher chance with AI
-            
-            if found_color_match:
-                final_price = random.uniform(base_price, premium_price)
-                deal_quality = "excellent" if final_price < budget else "good"
-            else:
-                final_price = base_price
-                deal_quality = "alternative"
-                color = random.choice(["black", "navy", "gray"])
-            
-            return {
-                "item_type": item_type,
-                "requested_color": color if found_color_match else f"requested: {color}",
-                "available_color": color,
-                "base_price": round(base_price, 2),
-                "final_price": round(final_price, 2),
-                "premium_applied": round((final_price - base_price) / base_price * 100, 1) if found_color_match else 0,
-                "deal_quality": deal_quality,
-                "color_match_found": found_color_match,
-                "merchant": "Premium Outdoor Gear Co.",
-                "availability": "in_stock",
-                "estimated_delivery": "2-3 business days",
-                "auto_purchase_eligible": final_price <= (budget * (1 + premium_tolerance)),
-                "search_timestamp": datetime.now().isoformat(),
-                "shopping_agent": "Alice (CrewAI Smart Shopping)",
-                "crewai_analysis": crewai_analysis.get("analysis", "CrewAI analysis completed"),
-                "crewai_metadata": crewai_analysis.get("metadata", {}),
-                "confidence": 0.92  # Higher confidence with CrewAI
-            }
+        # Use Alice's CrewAI agent to perform smart shopping analysis
+        rprint("[yellow]🤖 Using Alice's CrewAI agent for smart shopping analysis...[/yellow]")
         
-        # Register function for process integrity
-        code_hash = self.alice_sdk.register_integrity_checked_function(
-            find_smart_shopping_deal_with_crewai, 
-            "find_smart_shopping_deal"
+        # Execute CrewAI-powered smart shopping with process integrity
+        analysis_result = self.alice_agent.generate_smart_shopping_analysis(
+            item_type="winter_jacket",
+            color="green", 
+            budget=150.0,
+            premium_tolerance=0.20
         )
         
-        # Execute with process integrity proof
-        import asyncio
-        result, process_integrity_proof = asyncio.run(self.alice_sdk.execute_with_integrity_proof(
-            "find_smart_shopping_deal",
-            {"item_type": "winter_jacket", "color": "green", "budget": 150.0, "premium_tolerance": 0.20},
-            require_proof=True
-        ))
+        # Extract the analysis and process integrity proof
+        analysis_data = analysis_result["analysis"]
+        process_integrity_proof = analysis_result["process_integrity_proof"]
         
-        # Add metadata
-        shopping_data = {
-            "shopping_result": result,
-            "timestamp": datetime.now().isoformat(),
-            "agent_id": self.alice_sdk.get_agent_id(),
-            "genesis_studio_version": "1.0.0-triple-verified",
-            "triple_verified_stack": True,
-            "process_integrity_proof_id": process_integrity_proof.proof_id if process_integrity_proof else None
-        }
-        
+        # Store results for later use
+        self.results["analysis"] = analysis_data
         self.results["process_integrity_proof"] = process_integrity_proof
         
-        return shopping_data, process_integrity_proof
+        return analysis_data, process_integrity_proof
     
     def _store_analysis_on_ipfs(self, analysis_data: Dict[str, Any]) -> str:
         """Store analysis data on IPFS via Alice's SDK"""
@@ -500,7 +422,7 @@ class GenesisStudioX402Orchestrator:
         except Exception as e:
             print(f"⚠️  x402 payment failed (continuing demo): {e}")
             # Create a mock payment result for demo continuation
-            from packages.sdk.chaoschain_sdk.types import PaymentProof, PaymentMethod
+            from chaoschain_sdk.types import PaymentProof, PaymentMethod
             from datetime import datetime
             x402_payment_result = PaymentProof(
                 payment_id=f"failed_{int(time.time())}",
@@ -557,29 +479,22 @@ class GenesisStudioX402Orchestrator:
     
     def _validate_analysis_with_crewai(self, analysis_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Use the REAL CrewAI-powered GenesisValidatorAgent for validation.
-        This uses the production agent logic, not simplified demo logic.
+        Use Bob's CrewAI-powered validator agent for comprehensive analysis validation
         """
-        # Import the production validator agent
-        from agents.validator_agent_genesis import GenesisValidatorAgent
-        from agents.wallet_manager import GenesisWalletManager
+        rprint("[yellow]🤖 Using Bob's CrewAI-powered validation agent...[/yellow]")
         
-        # Create a temporary validator agent for this validation
-        # (In production, this would be Bob's persistent agent)
-        wallet_manager = GenesisWalletManager()
-        bob_address = wallet_manager.get_wallet_address("Bob")
+        # Execute CrewAI-powered validation with process integrity
+        validation_result = self.bob_agent.validate_analysis_with_crewai(analysis_data)
         
-        validator = GenesisValidatorAgent(
-            agent_domain="bob.chaoschain-studio.com",
-            wallet_address=bob_address,
-            wallet_manager=wallet_manager
-        )
+        # Extract the validation and process integrity proof
+        validation_data = validation_result["validation"]
+        process_integrity_proof = validation_result["process_integrity_proof"]
         
-        # Use the REAL CrewAI validation logic
-        print(f"🤖 Using CrewAI-powered validation agent...")
-        validation_result = validator.validate_analysis(analysis_data)
+        # Store results for later use
+        self.results["validation"] = validation_data
+        self.results["validation_process_integrity_proof"] = process_integrity_proof
         
-        return validation_result
+        return validation_data
     
     def _request_validation_erc8004(self, analysis_cid: str, analysis_data: Dict[str, Any]) -> str:
         """Request validation from Bob using ERC-8004 ValidationRegistry"""
@@ -668,7 +583,7 @@ class GenesisStudioX402Orchestrator:
         except Exception as e:
             print(f"⚠️  Validation payment failed (continuing demo): {e}")
             # Create a mock payment result for demo continuation
-            from packages.sdk.chaoschain_sdk.types import PaymentProof, PaymentMethod
+            from chaoschain_sdk.types import PaymentProof, PaymentMethod
             from datetime import datetime
             validation_payment_result = PaymentProof(
                 payment_id=f"failed_validation_{int(time.time())}",
@@ -680,7 +595,7 @@ class GenesisStudioX402Orchestrator:
                 transaction_hash="",
                 timestamp=datetime.now(),
                 receipt_data={"status": "failed", "reason": str(e)}
-            )
+        )
         
         # Store validation report on IPFS with payment proof
         enhanced_validation_data = {
@@ -813,7 +728,7 @@ class GenesisStudioX402Orchestrator:
         
         # Convert payment receipts to SDK format
         import time
-        from packages.sdk.chaoschain_sdk.types import PaymentProof, PaymentMethod
+        from chaoschain_sdk.types import PaymentProof, PaymentMethod
         payment_proofs = []
         for receipt in payment_receipts:
             if isinstance(receipt, dict):
@@ -1242,7 +1157,7 @@ The complete lifecycle of trustless agentic commerce with Triple-Verified Stack:
 • Complete audit trail for trustless commerce established
 
 [bold red]🔧 Next Steps:[/bold red]
-• Story Protocol integration for IP monetization
+• Enhanced evidence packages with payment proofs
 • Multi-agent collaboration workflows
 • Cross-chain x402 payment support"""
 

@@ -1,11 +1,12 @@
 """
-ERC-8004 Agents Package
+Genesis Studio Agents Package
 
-This package contains AI agents that demonstrate the ERC-8004 Trustless Agents standard.
+This package contains CrewAI-powered agents that integrate with the ChaosChain SDK
+for demonstrating the complete Triple-Verified Stack.
 """
 
-from .base_agent import ERC8004BaseAgent
-from .server_agent import ServerAgent
-from .validator_agent import ValidatorAgent
+from .server_agent_sdk import GenesisServerAgentSDK
+from .validator_agent_sdk import GenesisValidatorAgentSDK
+from .client_agent_genesis import GenesisClientAgent
 
-__all__ = ['ERC8004BaseAgent', 'ServerAgent', 'ValidatorAgent'] 
+__all__ = ['GenesisServerAgentSDK', 'GenesisValidatorAgentSDK', 'GenesisClientAgent'] 

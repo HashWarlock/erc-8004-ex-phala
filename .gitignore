@@ -215,3 +215,6 @@ genesis_studio_triple_verified_stack.py
 COMPLETE_TRUST_STACK_INTEGRATION.md
 MVP_ERC_Based.md
 MULTI_PAYMENT_INTEGRATION_SUMMARY.md
+clean_pypi_env/
+fresh_test_env/
+production_test_env/

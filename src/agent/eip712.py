@@ -7,7 +7,7 @@ Implements EIP-712 structured data signing for secure off-chain messages.
 import json
 from typing import Dict, Any, Optional
 from eth_account import Account
-from eth_account.messages import encode_structured_data
+from eth_account.messages import encode_defunct
 from web3 import Web3
 
 

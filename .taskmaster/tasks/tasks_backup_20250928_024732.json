@@ -1,0 +1,497 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Initialize Flox environment and verify setup",
+        "description": "Activate Flox environment and verify all development tools are properly configured",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "details": "Run 'flox activate' to initialize the complete development environment (Flox manifest already configured). Create requirements.txt with project dependencies. Create .env file with necessary API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.) and blockchain configuration. Verify tool versions: Python 3.11+, Node.js 18+, Foundry latest. Test imports for web3, crewai, and dstack-sdk. Start Anvil service with 'flox services start anvil'. The Flox environment automatically installs all necessary packages.",
+        "testStrategy": "Run 'flox activate' successfully, verify Python/Node/Foundry versions match requirements, test 'import web3, crewai, dstack' works, confirm Anvil starts on port 8545",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Deploy ERC-8004 registry contracts",
+        "description": "Deploy the three core ERC-8004 registry contracts to local blockchain",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "1"
+        ],
+        "details": "Deploy IdentityRegistry.sol, ReputationRegistry.sol, and ValidationRegistry.sol contracts using Foundry. Create deployment scripts and verify contract deployment on local Anvil instance.",
+        "testStrategy": "Run contract unit tests, verify deployment addresses, test basic contract interactions",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement base agent class",
+        "description": "Create the BaseAgent class implementing ERC-8004 standard compliance",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "2"
+        ],
+        "details": "Develop base_agent.py with core ERC-8004 functionality including agent registration, identity management, and blockchain interaction methods. Implement Web3 integration for contract calls.",
+        "testStrategy": "Unit tests for agent initialization, test registration with Identity Registry, verify Web3 interactions",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Create server agent for market analysis",
+        "description": "Implement ServerAgent (Alice) with market analysis capabilities",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "details": "Build server_agent.py extending BaseAgent, integrate CrewAI for multi-agent workflows, implement market analysis tools, create structured analysis output format, and add fallback analysis for API-less operation.",
+        "testStrategy": "Test market analysis generation, verify CrewAI integration, test fallback mechanisms",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Develop validator agent",
+        "description": "Create ValidatorAgent (Bob) for analysis validation services",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "details": "Implement validator_agent.py with validation logic, scoring algorithms (0-100 scale), quality assessment mechanisms, and detailed feedback generation. Integrate with ValidationRegistry contract.",
+        "testStrategy": "Test validation scoring logic, verify contract interactions, test feedback generation",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Build client agent for feedback",
+        "description": "Implement ClientAgent (Charlie) for feedback authorization and reputation management",
+        "status": "done",
+        "priority": "medium",
+        "dependencies": [
+          "3"
+        ],
+        "details": "Create client agent with feedback authorization capabilities, reputation tracking, and interaction with ReputationRegistry. Implement feedback submission and retrieval methods.",
+        "testStrategy": "Test feedback authorization flow, verify reputation updates, test registry interactions",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Integrate dstack Python SDK for Phala Cloud",
+        "description": "Set up dstack SDK for TEE capabilities and attestation on Phala Cloud",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "3"
+        ],
+        "details": "Install dstack Python SDK from https://github.com/Dstack-TEE/dstack/tree/master/sdk/python. Implement attestation features for TEE verification. Use Key Generator for agent key management and cryptographic signing. Set up secure communication channels using dstack's TEE capabilities. Configure agents to use dstack for confidential data handling.",
+        "testStrategy": "Test dstack SDK installation and imports, verify attestation generation and verification, test key generation and signing operations, validate TEE secure communication",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Verify dstack SDK installation and import",
+            "description": "Confirm dstack Python SDK is properly installed via Flox",
+            "details": "Verify dstack SDK is installed by Flox environment (automatic via manifest). Test import with 'from dstack import DstackClient, Attestation, KeyGenerator'. Check SDK version and compatibility. Create a simple test script to verify attestation and key generation capabilities work correctly.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 7
+          },
+          {
+            "id": 2,
+            "title": "Implement attestation service",
+            "description": "Create attestation service using dstack SDK for TEE verification",
+            "details": "Implement attestation generation and verification using dstack's attestation features. Create wrapper functions for agent attestation. Set up attestation validation for incoming requests.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 7
+          },
+          {
+            "id": 3,
+            "title": "Set up Key Generator for agent keys",
+            "description": "Configure dstack Key Generator for secure key management",
+            "details": "Use dstack's Key Generator to create and manage agent keys. Implement key derivation for each agent. Set up secure key storage within TEE environment. Create signing and verification functions.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 7
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Build containers with Flox and configure CVM deployment",
+        "description": "Use Flox containerize to build images and configure CVM deployment on Phala Cloud",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "7"
+        ],
+        "details": "Use 'flox containerize' to build OCI container images from the Flox environment. Create docker-compose.yml for multi-agent orchestration using Flox-generated images. Configure CVM (Confidential VM) settings for Phala Cloud deployment with TEE attestation parameters. Set CONTAINER_MODE=true environment variable for container builds. Add CVM-specific configurations: resource limits, TEE attestation endpoints, secure key storage paths. Implement health checks using the configured HEALTHCHECK_INTERVAL. The Flox manifest already includes container configuration with proper ports and labels.",
+        "testStrategy": "Run 'flox containerize' successfully, test container locally with 'docker run', verify docker-compose brings up all services, validate TEE attestation works in container, test CVM deployment on Phala Cloud testnet",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Generate container image with Flox",
+            "description": "Use Flox containerize to build base image with all dependencies",
+            "details": "Run 'flox containerize' to generate OCI image from Flox environment. Verify image includes Python 3.11, dstack SDK, Web3.py 6.0.0+, CrewAI 0.165.1+, and all dependencies. Set CONTAINER_MODE=true for container-specific optimizations. Tag image appropriately for Phala Cloud CVM deployment.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          },
+          {
+            "id": 2,
+            "title": "Configure docker-compose for multi-agent setup",
+            "description": "Create docker-compose.yml for orchestrating all agents",
+            "details": "Build docker-compose.yml with services for server agent, validator agent, and client agent. Configure networking, volumes, and environment variables. Set up inter-container communication.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          },
+          {
+            "id": 3,
+            "title": "Set up CVM deployment configuration",
+            "description": "Configure Phala Cloud CVM deployment settings",
+            "details": "Create CVM configuration for Phala Cloud deployment. Set up TEE attestation parameters. Configure resource allocation (CPU, memory). Set environment variables for TEE operation. Configure secure endpoints and access controls.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 8
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Implement trustless interaction framework",
+        "description": "Build the complete trustless agent interaction system",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "4",
+          "5",
+          "6"
+        ],
+        "details": "Create agent discovery mechanisms, implement work submission with cryptographic proofs, build validation request/response flows, establish reputation building systems, and create comprehensive audit trails.",
+        "testStrategy": "End-to-end testing of agent interactions, verify cryptographic proofs, test audit trail recording",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Add privacy-preserving computations with dstack",
+        "description": "Implement TEE-based confidential computing using dstack features",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "8",
+          "9"
+        ],
+        "details": "Use dstack's TEE capabilities for sensitive agent operations. Implement confidential data handling using dstack's secure enclaves. Create privacy-preserving validation algorithms that run in CVMs. Leverage dstack's Key Generator for secure key management within TEE. Implement attestation verification for all confidential computations.",
+        "testStrategy": "Test confidential execution in CVM, verify data privacy through attestation, test key management with dstack Key Generator, validate TEE isolation",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create demo script",
+        "description": "Build comprehensive demonstration script showcasing all features",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "9"
+        ],
+        "details": "Develop demo.py that orchestrates the complete workflow: contract deployment, agent registration, market analysis, validation, feedback, and audit trail. Include clear step-by-step output and error handling.",
+        "testStrategy": "Run complete demo end-to-end, verify all steps execute correctly, test error scenarios",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement agent API endpoints",
+        "description": "Build REST API endpoints for agent communication in CVM environment",
+        "status": "done",
+        "priority": "medium",
+        "dependencies": [
+          "8"
+        ],
+        "details": "Create REST API endpoints for agent services running in CVMs. Implement secure API authentication using dstack attestation. Build inter-agent communication protocols. Add API rate limiting and monitoring. Create OpenAPI documentation for agent endpoints.",
+        "testStrategy": "Test API endpoint functionality, verify authentication with attestation, test inter-agent communication, validate rate limiting",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Write comprehensive tests",
+        "description": "Create complete test suite for all components",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          "11"
+        ],
+        "details": "Write unit tests for smart contracts using Foundry, create integration tests for agent interactions, develop end-to-end tests for complete workflows, and add performance benchmarks.",
+        "testStrategy": "Achieve >80% code coverage, test all critical paths, verify performance metrics",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Optimize gas usage",
+        "description": "Optimize smart contracts for minimal gas consumption",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "13"
+        ],
+        "details": "Analyze gas usage patterns, optimize contract storage layouts, batch operations where possible, implement efficient data structures, and use gas-efficient patterns.",
+        "testStrategy": "Measure gas costs before/after optimization, test functionality preservation, benchmark improvements",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Create documentation and deployment guides",
+        "description": "Write comprehensive documentation for the project",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          "13"
+        ],
+        "details": "Create API documentation, write deployment guides for Phala Cloud CVM deployment, document dstack SDK integration and attestation usage, create Docker deployment guides, write troubleshooting guides for TEE issues, and provide example use cases with confidential computing.",
+        "testStrategy": "Review documentation completeness, test deployment instructions, verify example accuracy",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Implement CAIP-10 and RFC 8615 compliance",
+        "description": "Add chain-agnostic addressing and well-known URI support for agent discovery",
+        "details": "Implement CAIP-10 compliant addressing for cross-chain agent identification. Add RFC 8615 well-known URI endpoints for agent discovery (/.well-known/agent.json). Create agent metadata structures that support cross-chain references. Ensure compatibility with ERC-8004 standard requirements.",
+        "testStrategy": "Test CAIP-10 address generation and parsing, verify well-known URI endpoint responses, test cross-chain address resolution",
+        "status": "cancelled",
+        "dependencies": [
+          3
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement EIP-712 typed data signing",
+        "description": "Add typed data signing for secure off-chain message verification",
+        "details": "Implement EIP-712 typed data structures for agent messages. Create domain separator for the application. Add signing and verification functions for off-chain messages. Integrate with dstack Key Generator for secure signing within TEE.",
+        "testStrategy": "Test signature generation and verification, validate domain separator, test message recovery from signatures",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create EIP-712 domain separator and type definitions",
+            "description": "Define the domain separator and structured data types for agent messages",
+            "details": "Implement domain separator with name, version, chainId, and verifyingContract. Create type definitions for agent operations like analysis requests, validation results, and feedback submissions.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 17
+          },
+          {
+            "id": 2,
+            "title": "Implement signing functions with dstack Key Generator",
+            "description": "Integrate TEE-secure signing using dstack Key Generator",
+            "details": "Use dstack Key Generator to securely sign EIP-712 typed data within the TEE. Ensure private keys never leave the secure enclave.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 17
+          },
+          {
+            "id": 3,
+            "title": "Create verification utilities for signed messages",
+            "description": "Build utilities to verify EIP-712 signatures and recover signers",
+            "details": "Implement signature verification, signer recovery, and validation functions. Include both on-chain and off-chain verification methods.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 17
+          },
+          {
+            "id": 4,
+            "title": "Write comprehensive tests for EIP-712 implementation",
+            "description": "Create unit and integration tests for typed data signing",
+            "details": "Test domain separator creation, message signing, signature verification, and TEE integration. Include edge cases and security tests.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 17
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Implement off-chain data storage with on-chain pointers",
+        "description": "Create cost-efficient data storage system with blockchain references",
+        "details": "Implement IPFS or similar storage for large data objects. Create on-chain pointer system using content hashes. Build data retrieval and verification mechanisms. Ensure data integrity through cryptographic hashing. Optimize for gas efficiency by minimizing on-chain storage.",
+        "testStrategy": "Test data upload and retrieval, verify hash integrity, test pointer resolution, measure gas savings",
+        "status": "pending",
+        "dependencies": [
+          9
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement CrewAI Flows for structured workflows",
+        "description": "Set up CrewAI Flows alongside Crews for deterministic agent workflows",
+        "details": "Implement CrewAI Flows for structured, sequential workflows where order matters. Create Flow definitions for validation processes. Set up both autonomous Crews and structured Flows based on use case. Integrate MCP for tool connectivity. Ensure compatibility with TEE environment.",
+        "testStrategy": "Test Flow execution order, verify Crew autonomy, test MCP tool integration, validate workflow outputs",
+        "status": "pending",
+        "dependencies": [
+          4,
+          5
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Configure Flox environment for containerization",
+        "description": "Set up Flox manifest for building base containers with all required dependencies for Phala Cloud deployment",
+        "details": "Update .flox/env/manifest.toml to include all necessary packages for the project: Python 3.8+, Node.js 18+, Foundry tools, and build essentials. Configure environment variables for container builds. Add dstack SDK dependencies. Set up proper activation hooks for both development and container environments. Configure services section for agent processes. Ensure the manifest supports cross-platform builds (Linux x86_64 and aarch64) for CVM compatibility. Add containerization-specific settings for minimal image size and security hardening.",
+        "testStrategy": "Test flox activate locally, verify all packages install correctly, test flox containerize command (when available), validate generated container runs with proper environment",
+        "status": "done",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Fix Pydantic serialization warnings in CrewAI integration",
+        "description": "Resolve Pydantic serialization warnings occurring in E2E tests due to CrewAI Message and Choices object mismatches",
+        "details": "The warnings indicate that CrewAI is using Message objects with 6 fields but Pydantic expects 9 fields. This is likely a version compatibility issue between CrewAI and its dependencies. Need to: 1) Check CrewAI version compatibility, 2) Update Message/Choices serialization, 3) Add proper type hints, 4) Consider custom serializers if needed.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          13
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Diagnose Pydantic version compatibility with CrewAI",
+            "description": "Check version compatibility between Pydantic and CrewAI to identify the root cause of serialization warnings",
+            "details": "Investigate the installed versions of pydantic and crewai. Check if there's a version mismatch causing the serialization warnings. Review CrewAI's Message and Choices classes to understand the expected fields.",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          },
+          {
+            "id": 2,
+            "title": "Create custom Pydantic serializers for CrewAI objects",
+            "description": "Implement custom serializers to handle Message and Choices objects properly",
+            "details": "Create custom Pydantic serializers that handle the field mismatch between expected (9 fields) and actual (6 fields) for Message and Choices objects. This may involve creating wrapper classes or custom validation.",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 21
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Fix E2E test functions returning values instead of None",
+        "description": "Correct E2E test functions that return boolean values when they should return None per pytest standards",
+        "details": "Multiple test functions in tests/e2e/test_workflow.py and integration tests are returning boolean values instead of None. Pytest expects test functions to use assertions and return None. Need to replace 'return True/False' with proper assertions throughout the test suite.",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [
+          13
+        ],
+        "priority": "medium",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Fix test functions in E2E tests returning boolean values",
+            "description": "Replace return statements with assertions in test_workflow.py",
+            "details": "Go through tests/e2e/test_workflow.py and replace all 'return True/False' statements with proper assertions. Tests should use assert statements and return None implicitly.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 22
+          },
+          {
+            "id": 2,
+            "title": "Fix integration test functions returning boolean values",
+            "description": "Replace return statements with assertions in integration tests",
+            "details": "Fix test functions in test_server_agent.py, test_validator_agent.py, test_tee_integration.py, and test_tee_sdk.py that are returning boolean values instead of using assertions.",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 22
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "title": "Perform repository cleanup and code structure refactoring",
+        "description": "Clean up the repository and ensure all code follows best practices for structure, organization, and maintainability",
+        "details": "This task involves:\n- Removing unused imports and dead code\n- Organizing files according to Python best practices\n- Cleaning up test files and ensuring proper test organization\n- Removing temporary files and unused scripts\n- Standardizing code formatting and naming conventions\n- Consolidating duplicate functionality\n- Updating .gitignore for proper exclusions\n- Ensuring proper module structure with __init__.py files\n- Cleaning up configuration files and environment variables\n- Archiving or removing deprecated components",
+        "testStrategy": "Manual verification of repository structure, linting checks, and ensuring all existing tests still pass after cleanup",
+        "status": "done",
+        "dependencies": [
+          13
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Restructure documentation for cohesive organization",
+        "description": "Update and reorganize all documentation to create a cohesive structure and remove outdated information",
+        "details": "This task involves:\n- Auditing all existing documentation files\n- Removing outdated or conflicting information\n- Creating a clear documentation hierarchy\n- Consolidating duplicate documentation\n- Updating README.md with current project state\n- Organizing docs/ folder with logical structure\n- Ensuring all API documentation is current\n- Adding missing documentation for new features\n- Creating a documentation index/map\n- Removing temporary or draft documentation files\n- Ensuring consistency in documentation style and formatting",
+        "testStrategy": "Manual review of documentation completeness, link checking, and verification that all documented features match current implementation",
+        "status": "done",
+        "dependencies": [
+          23
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Refactor tests to use simulators instead of mock data",
+        "description": "Update all tests to run against actual simulators (TEE simulator, local blockchain) rather than using mock data to ensure realistic testing conditions",
+        "details": "Current tests use mock data and patches for TEE and blockchain interactions. This needs to be refactored to:\n- Always use the dstack TEE simulator for TEE-related tests\n- Always use Anvil local blockchain for contract tests\n- Remove all mock patches for Web3, DstackClient, and contract interactions\n- Ensure tests fail properly if simulators are not running\n- Update test fixtures to connect to real simulators\n- Add pre-test checks to verify simulators are running\n- Update documentation to reflect simulator requirements\n- Consider using docker-compose for test environment setup",
+        "testStrategy": "Verify that all tests pass when simulators are running, and fail with clear error messages when simulators are not available. Ensure no mock data remains in the test suite.",
+        "status": "done",
+        "dependencies": [
+          24
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Fix all 11 failing tests and 1 error in test suite",
+        "description": "Systematically fix all test failures discovered through proper testing in Flox subshells",
+        "details": "Fix the following test failures:\n- 5 agent registration issues in E2E and integration tests\n- 3 contract AgentNotFound errors (0xe93ba223)\n- 2 TEE validator KeyError issues (slice(None, 16, None))\n- 1 insufficient funds error in test_phala_deployment\n- 1 validation test error\n\nEach fix must be properly tested in Flox subshells before considering it complete.",
+        "testStrategy": "Run 'flox activate -- make test' after each fix to verify progress. All 55 tests should pass with no errors or failures.",
+        "status": "done",
+        "dependencies": [
+          25
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Fix remaining test failures and add automatic funding in test setup",
+        "description": "Fix 3 remaining test failures and implement automatic account funding during test setup",
+        "details": "Fix the following issues:\n1. test_phala_deployment.py::test_feedback_authorization - Insufficient ETH balance (0.0000 ETH) for TEE agents\n2. test_api_demo.py::test_validation - NameError: 'test_analysis' is not defined\n3. test_api_demo.py::test_workflow - 401 Unauthorized API error\n4. Fix remaining test warnings about functions returning non-None values\n\nImplement automatic funding:\n- Add funding fixtures that automatically fund test accounts before each test class\n- Ensure TEE-derived addresses get funded during test setup\n- Create a centralized funding mechanism for all test scenarios\n- Consider adding a test setup script that ensures Anvil has sufficient funds",
+        "testStrategy": "Run 'flox activate -- make test' to verify all 55 tests pass without manual intervention. No test should fail due to insufficient funds.",
+        "status": "done",
+        "dependencies": [
+          26
+        ],
+        "priority": "high",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "totalTasks": 15,
+      "createdAt": "2025-08-23T01:15:00Z",
+      "lastUpdated": "2025-08-23T01:15:00Z",
+      "version": "1.0.0",
+      "created": "2025-08-23T06:28:20.781Z",
+      "description": "Tasks for master context",
+      "updated": "2025-09-04T02:37:16.426Z"
+    }
+  }
+}

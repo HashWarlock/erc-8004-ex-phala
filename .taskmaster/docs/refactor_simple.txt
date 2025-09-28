@@ -1,0 +1,54 @@
+## TEE Agent SDK Refactoring Project
+
+Transform the current ERC-8004 repository into a streamlined TEE Agent SDK for easy agent development.
+
+### Goals
+- Create a clean, developer-friendly SDK structure
+- Extract core agent functionality into reusable components
+- Simplify setup to under 5 minutes for new developers
+- Provide ready-to-use agent templates
+- Maintain TEE integration with Phala Cloud
+
+### Key Deliverables
+
+1. **New Repository Structure**
+   - Separate SDK repository (erc-8004-tee-agents)
+   - Clean separation of concerns
+   - Modular agent framework
+
+2. **Core Agent Framework**
+   - BaseAgent class with plugin system
+   - TEE authentication module
+   - ERC-8004 registry client
+   - EIP-712 signer component
+
+3. **Agent Templates**
+   - Server agent template for analysis
+   - Validator agent template for validation
+   - Client agent template for feedback
+   - Custom agent minimal template
+
+4. **Developer Tools**
+   - One-command project setup script
+   - Quick deployment to Phala Cloud
+   - Agent registration utilities
+   - Key generation tools
+
+5. **Examples and Documentation**
+   - Basic 3-agent workflow example
+   - AI-enhanced agent example
+   - Quickstart guide
+   - API reference documentation
+
+### Technical Requirements
+- Python 3.8+ compatibility
+- Minimal dependencies (< 10 core packages)
+- Support for TEE attestation via dstack SDK
+- Integration with deployed ERC-8004 contracts
+- Docker containerization support
+
+### Success Metrics
+- Time to first agent: < 5 minutes
+- Lines of code for simple agent: < 50
+- Setup steps: < 3 commands
+- Complete test coverage > 90%

@@ -1,412 +1,654 @@
 # API Reference
 
-## Base URL
-- Development: `http://localhost:8000`
-- Production: Configured per deployment
+Complete API documentation for the ERC-8004 TEE Agent SDK.
 
-## Features
-- ERC-8004 compliant agent operations
-- Phala Cloud TEE integration for secure key management
-- Automatic wallet funding for TEE agents
-- Real-time WebSocket updates
-- Complete workflow automation
+## Table of Contents
+
+- [Core Classes](#core-classes)
+  - [BaseAgent](#baseagent)
+  - [AgentConfig](#agentconfig)
+  - [RegistryAddresses](#registryaddresses)
+- [Authentication](#authentication)
+  - [TEEAuthenticator](#teeauthenticator)
+- [Registry Operations](#registry-operations)
+  - [RegistryClient](#registryclient)
+- [Signing](#signing)
+  - [EIP712Signer](#eip712signer)
+- [Templates](#templates)
+  - [ServerAgent](#serveragent)
+  - [ValidatorAgent](#validatoragent)
+  - [ClientAgent](#clientagent)
+- [Utilities](#utilities)
+
+---
+
+## Core Classes
+
+### BaseAgent
+
+Abstract base class for all TEE agents.
+
+```python
+from src.agent.base import BaseAgent, AgentConfig, AgentRole
+
+class BaseAgent:
+    """Abstract base class for TEE agents."""
+
+    def __init__(self, config: AgentConfig, registries: RegistryAddresses)
+```
+
+#### Methods
+
+##### `register() -> int`
+Register the agent with the ERC-8004 Identity Registry.
+
+```python
+agent_id = await agent.register()
+```
+
+**Returns:** Agent ID from the registry
+
+**Raises:** `RegistrationError` if registration fails
+
+##### `process_task(task_data: Dict[str, Any]) -> Dict[str, Any]`
+Abstract method to process incoming tasks. Must be implemented by subclasses.
+
+```python
+async def process_task(self, task_data):
+    # Your implementation
+    return {'status': 'completed', 'result': ...}
+```
+
+**Parameters:**
+- `task_data`: Dictionary containing task information
+
+**Returns:** Dictionary with processing results
+
+##### `get_attestation() -> Dict[str, Any]`
+Get TEE attestation for the agent.
+
+```python
+attestation = await agent.get_attestation()
+```
+
+**Returns:** Dictionary containing:
+- `quote`: TEE quote bytes
+- `event_log`: Event log data
+- `timestamp`: Attestation timestamp
+
+##### `sign_message(message: Dict[str, Any]) -> str`
+Sign a message using EIP-712.
+
+```python
+signature = await agent.sign_message({
+    'type': 'AgentMessage',
+    'data': 'Hello World'
+})
+```
+
+**Parameters:**
+- `message`: Message dictionary to sign
+
+**Returns:** Hex signature string
+
+##### `add_plugin(name: str, plugin: Any)`
+Add a plugin to extend agent functionality.
+
+```python
+agent.add_plugin('ai_analyzer', AIAnalyzer())
+```
+
+##### `get_plugin(name: str) -> Any`
+Retrieve a registered plugin.
+
+```python
+ai_plugin = agent.get_plugin('ai_analyzer')
+```
+
+---
+
+### AgentConfig
+
+Configuration dataclass for agent initialization.
+
+```python
+@dataclass
+class AgentConfig:
+    domain: str                    # Agent's domain (e.g., "my-agent.example.com")
+    salt: str                      # Unique salt for key derivation
+    role: AgentRole               # Agent role (SERVER, VALIDATOR, CLIENT)
+    rpc_url: str                  # Blockchain RPC endpoint
+    chain_id: int                 # Chain ID (84532 for Base Sepolia)
+    use_tee_auth: bool = False    # Enable TEE authentication
+    private_key: Optional[str] = None  # Fallback private key (dev mode)
+```
+
+#### Example Usage
+
+```python
+config = AgentConfig(
+    domain="market-analyzer.ai",
+    salt="unique-salt-123",
+    role=AgentRole.SERVER,
+    rpc_url="https://sepolia.base.org",
+    chain_id=84532,
+    use_tee_auth=True
+)
+```
+
+---
+
+### AgentRole
+
+Enumeration of agent roles.
+
+```python
+class AgentRole(Enum):
+    SERVER = "server"       # Provides services
+    VALIDATOR = "validator" # Validates data/operations
+    CLIENT = "client"       # Requests services, provides feedback
+```
+
+---
+
+### RegistryAddresses
+
+Container for ERC-8004 registry contract addresses.
+
+```python
+@dataclass
+class RegistryAddresses:
+    identity: str      # Identity registry address
+    reputation: str    # Reputation registry address
+    validation: str    # Validation registry address
+    tee_verifier: str  # TEE verifier contract address
+```
+
+#### Default Addresses (Base Sepolia)
+
+```python
+registries = RegistryAddresses(
+    identity="0x000c5A70B7269c5eD4238DcC6576e598614d3f70",
+    reputation="0xa7b860b16a41Aa8b6990EB3Fec0dB34686f7EAde",
+    validation="0xA455e56CBE75aaa3F692d28d0fBFD1D44B64F70d",
+    tee_verifier="0x1b841e88ba786027f39ecf9Cd160176b22E3603c"
+)
+```
+
+---
 
 ## Authentication
-Most endpoints require Bearer token authentication:
-```http
-Authorization: Bearer <token>
+
+### TEEAuthenticator
+
+Handles TEE-based authentication and key derivation.
+
+```python
+from src.agent.tee_auth import TEEAuthenticator
+
+class TEEAuthenticator:
+    def __init__(self, domain: str, salt: str, use_tee: bool = True)
 ```
 
-## TEE Mode
-When `USE_TEE_AUTH=true`, agents use deterministic key derivation via Phala's TEE simulator. The API automatically funds TEE wallets on startup.
+#### Methods
 
-## Endpoints
+##### `derive_address() -> str`
+Derive agent's Ethereum address.
 
-### Health & Status
-
-#### GET /health
-Health check endpoint with agent registration status
-```json
-{
-  "status": "healthy",
-  "tee_mode": true,
-  "agents": {
-    "server": {
-      "agent_id": 1,
-      "registered": true,
-      "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
-      "domain": "alice.example.com"
-    },
-    "validator": {
-      "agent_id": 2,
-      "registered": true,
-      "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
-      "domain": "bob.example.com"
-    },
-    "client": {
-      "agent_id": 3,
-      "registered": true,
-      "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
-      "domain": "charlie.example.com"
-    }
-  },
-  "blockchain": {
-    "connected": true,
-    "chain_id": 31337,
-    "rpc_url": "http://localhost:8545"
-  }
-}
+```python
+address = await authenticator.derive_address()
 ```
 
-### Agent Operations
+**Returns:** Ethereum address (0x-prefixed)
 
-#### GET /agents
-Get all registered agents with their TEE or traditional configuration
-```json
-{
-  "server": {
-    "agent_id": 1,
-    "domain": "alice.example.com",
-    "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
-    "tee_enabled": true,
-    "balance_eth": "0.1",
-    "card": {
-      "name": "Market Analysis Server",
-      "description": "AI-powered market analysis agent"
-    }
-  },
-  "validator": {
-    "agent_id": 2,
-    "domain": "bob.example.com",
-    "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
-    "tee_enabled": true,
-    "balance_eth": "0.1",
-    "card": {
-      "name": "Work Validator",
-      "description": "Validates analysis quality"
-    }
-  },
-  "client": {
-    "agent_id": 3,
-    "domain": "charlie.example.com",
-    "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
-    "tee_enabled": true,
-    "balance_eth": "0.1",
-    "card": {
-      "name": "Feedback Client",
-      "description": "Provides service feedback"
-    }
-  }
-}
+##### `get_attestation() -> Dict[str, Any]`
+Generate TEE attestation.
+
+```python
+attestation = await authenticator.get_attestation()
 ```
 
-#### GET /agents/{agent_type}
-Get specific agent information
-- `agent_type`: server | validator | client
+**Returns:** Dictionary with attestation data
 
-### Server Agent
+##### `sign_with_tee(message_hash: bytes) -> bytes`
+Sign a message hash using TEE-derived key.
 
-#### POST /server/analyze
-Perform market analysis
-```json
-// Request
-{
-  "symbol": "BTC",
-  "timeframe": "1d",
-  "indicators": ["trend", "volume"]
-}
-
-// Response
-{
-  "agent_id": 1,
-  "analysis": {
-    "symbol": "BTC",
-    "timeframe": "1d",
-    "trend": "bullish",
-    "confidence": 85,
-    "recommendation": "BUY"
-  }
-}
+```python
+signature = await authenticator.sign_with_tee(message_hash)
 ```
 
-#### POST /server/validate
-Submit work for validation
-```json
-// Request
-{
-  "analysis_data": {...},
-  "validator_agent_id": 2
-}
+**Parameters:**
+- `message_hash`: 32-byte message hash
 
-// Response
-{
-  "transaction_hash": "0x...",
-  "validation_requested": true
-}
+**Returns:** Signature bytes
+
+---
+
+## Registry Operations
+
+### RegistryClient
+
+Manages interactions with ERC-8004 registry contracts.
+
+```python
+from src.agent.registry import RegistryClient
+
+class RegistryClient:
+    def __init__(self, registries: RegistryAddresses, web3_provider)
 ```
 
-### Validator Agent
+#### Methods
 
-#### POST /validator/validate
-Validate analysis work
-```json
-// Request
-{
-  "analysis_data": {...},
-  "server_agent_id": 1
-}
+##### `register_agent(agent_card: Dict) -> int`
+Register an agent with the Identity Registry.
 
-// Response
-{
-  "agent_id": 2,
-  "validation": {
-    "is_valid": true,
-    "score": 92,
-    "confidence": 88
-  }
-}
+```python
+agent_id = await registry.register_agent({
+    'domain': 'my-agent.com',
+    'address': '0x...',
+    'metadata': {...}
+})
 ```
 
-#### GET /validator/pending
-Get pending validation requests
-```json
-{
-  "pending": [
-    {
-      "request_id": "0x...",
-      "server_agent_id": 1,
-      "data_hash": "0x...",
-      "timestamp": 1234567890
-    }
-  ]
-}
+**Parameters:**
+- `agent_card`: Agent registration data
+
+**Returns:** Agent ID
+
+##### `submit_feedback(agent_id: int, rating: int, comment: str)`
+Submit feedback for an agent.
+
+```python
+await registry.submit_feedback(
+    agent_id=1,
+    rating=5,
+    comment="Excellent service"
+)
 ```
 
-### Client Agent
+##### `request_validation(data_hash: str, validator_id: int)`
+Request validation from a validator agent.
 
-#### POST /client/feedback/authorize
-Authorize feedback submission
-```json
-// Request
-{
-  "server_agent_id": 1
-}
-
-// Response
-{
-  "transaction_hash": "0x...",
-  "authorized": true
-}
+```python
+validation_id = await registry.request_validation(
+    data_hash="0x...",
+    validator_id=2
+)
 ```
 
-#### POST /client/feedback/submit
-Submit feedback for service
-```json
-// Request
-{
-  "server_agent_id": 1,
-  "score": 85,
-  "comment": "Excellent analysis"
-}
+##### `submit_validation_response(request_id: int, is_valid: bool, attestation: Dict)`
+Submit validation response.
 
-// Response
-{
-  "feedback": {
-    "client_id": 3,
-    "server_id": 1,
-    "score": 85,
-    "timestamp": 1234567890
-  }
-}
+```python
+await registry.submit_validation_response(
+    request_id=1,
+    is_valid=True,
+    attestation={...}
+)
 ```
 
-#### GET /client/reputation/{server_id}
-Check server reputation
-```json
-{
-  "reputation": {
-    "server_id": 1,
-    "feedback_count": 10,
-    "average_score": 87.5,
-    "trust_level": "high"
-  }
-}
+---
+
+## Signing
+
+### EIP712Signer
+
+Handles EIP-712 typed data signing.
+
+```python
+from src.agent.signing import EIP712Signer
+
+class EIP712Signer:
+    def __init__(self, domain_name: str, version: str, chain_id: int)
 ```
 
-### TEE Operations
+#### Methods
 
-#### GET /tee/status
-Get TEE simulator status and configuration
-```json
-{
-  "tee_enabled": true,
-  "simulator_endpoint": ".dstack/sdk/simulator/dstack.sock",
-  "simulator_active": true,
-  "agents": {
-    "server": {
-      "domain": "alice.example.com",
-      "address": "0xC6aB3F953c7F0B33B1E9056Fa6f795B329c3323D",
-      "funded": true,
-      "balance_eth": "0.1"
-    },
-    "validator": {
-      "domain": "bob.example.com",
-      "address": "0x83247F3B9772D2b0220A08b8fF01E95A28f7423F",
-      "funded": true,
-      "balance_eth": "0.1"
-    },
-    "client": {
-      "domain": "charlie.example.com",
-      "address": "0x54AF215206E971ADE501373E0a6Ace7369B5c22d",
-      "funded": true,
-      "balance_eth": "0.1"
-    }
-  }
-}
+##### `sign_typed_data(message: Dict, private_key: bytes) -> str`
+Sign typed data according to EIP-712.
+
+```python
+signature = signer.sign_typed_data(
+    message={'type': 'Message', 'content': 'Hello'},
+    private_key=private_key_bytes
+)
 ```
 
-#### POST /tee/fund
-Manually trigger TEE wallet funding
-```json
-// Response
-{
-  "funded": ["server", "validator", "client"],
-  "already_funded": [],
-  "total_eth_sent": "0.3"
-}
+**Parameters:**
+- `message`: Message dictionary
+- `private_key`: Private key bytes
+
+**Returns:** Hex signature
+
+##### `get_domain_separator() -> bytes`
+Get the EIP-712 domain separator.
+
+```python
+domain_separator = signer.get_domain_separator()
 ```
 
-### Workflow
+---
 
-#### POST /workflow/complete
-Execute complete workflow with all agent interactions
-```json
-// Request
-{
-  "symbol": "ETH",
-  "timeframe": "4h",
-  "auto_fund": true  // Auto-fund agents if needed
-}
+## Templates
 
-// Response
-{
-  "workflow": {
-    "agents_registered": true,
-    "tee_mode": true,
-    "analysis": {
-      "symbol": "ETH",
-      "trend": "bullish",
-      "confidence": 87
-    },
-    "validation": {
-      "is_valid": true,
-      "score": 92
-    },
-    "feedback": {
-      "submitted": true,
-      "score": 85
-    },
-    "transactions": [
-      "0x...analysis_tx",
-      "0x...validation_tx",
-      "0x...feedback_tx"
-    ],
-    "reputation_updated": true
-  }
-}
+### ServerAgent
+
+Template for server agents that provide services.
+
+```python
+from src.templates.server_agent import ServerAgent
+
+class ServerAgent(BaseAgent):
+    """Server agent template for service providers."""
+
+    async def process_task(self, task_data: Dict) -> Dict
 ```
 
-### WebSocket Endpoints
+#### Features
+- Market analysis capabilities
+- Data processing
+- Service provision
+- Optional AI enhancement
 
-#### WS /ws
-Main WebSocket connection for all events
+#### Example
 
-#### WS /ws/{agent_type}
-Agent-specific WebSocket channels
-
-Message format:
-```json
-{
-  "event": "analysis_completed",
-  "agent_type": "server",
-  "data": {...},
-  "timestamp": 1234567890
-}
+```python
+class MarketAnalyzer(ServerAgent):
+    async def process_task(self, task_data):
+        analysis = await self.analyze_market(task_data['asset'])
+        return {
+            'status': 'completed',
+            'analysis': analysis,
+            'confidence': 0.95
+        }
 ```
 
-## Error Responses
+---
 
-### 400 Bad Request
-```json
-{
-  "detail": "Invalid request parameters"
-}
+### ValidatorAgent
+
+Template for validator agents.
+
+```python
+from src.templates.validator_agent import ValidatorAgent
+
+class ValidatorAgent(BaseAgent):
+    """Validator agent template."""
+
+    async def validate_data(self, data: Dict) -> bool
+    async def validate_computation(self, computation: Dict) -> bool
 ```
 
-### 401 Unauthorized
-```json
-{
-  "detail": "Invalid or missing authentication token"
-}
+#### Features
+- Data validation
+- Computation verification
+- Integrity checks
+- Attestation generation
+
+#### Example
+
+```python
+class DataValidator(ValidatorAgent):
+    async def validate_data(self, data):
+        # Custom validation logic
+        is_valid = self.check_integrity(data)
+        return is_valid
 ```
 
-### 404 Not Found
-```json
-{
-  "detail": "Resource not found"
-}
+---
+
+### ClientAgent
+
+Template for client agents that request services.
+
+```python
+from src.templates.client_agent import ClientAgent
+
+class ClientAgent(BaseAgent):
+    """Client agent template."""
+
+    async def request_service(self, service_type: str, data: Dict)
+    async def submit_feedback(self, agent_id: int, rating: int)
 ```
 
-### 500 Internal Server Error
-```json
-{
-  "detail": "Internal server error",
-  "error": "Detailed error message"
-}
+#### Features
+- Service requests
+- Feedback submission
+- Result processing
+- Rating management
+
+---
+
+## Utilities
+
+### Configuration Loading
+
+```python
+from src.utils.config import load_config
+
+config = load_config('.env')
 ```
 
-## Rate Limiting
+### Cryptographic Utilities
 
-- Default: 100 requests per minute per IP
-- WebSocket: 10 connections per IP
-- Configurable via environment variables
+```python
+from src.utils.crypto import (
+    generate_keypair,
+    hash_message,
+    verify_signature
+)
 
-## CORS Configuration
+# Generate new keypair
+private_key, public_key = generate_keypair()
 
-Default allowed origins:
-- `http://localhost:*`
-- Configured production domains
+# Hash message
+message_hash = hash_message(b"Hello World")
 
-## Environment Variables
-
-```bash
-# API Configuration
-API_TOKEN=your-api-token
-API_PORT=8000
-
-# Blockchain
-RPC_URL=http://127.0.0.1:8545
-CHAIN_ID=31337
-
-# TEE Authentication Mode
-USE_TEE_AUTH=true  # Enable Phala Cloud TEE mode
-
-# TEE Agent Configuration (for deterministic keys)
-SERVER_AGENT_DOMAIN=alice.example.com
-SERVER_AGENT_SALT=server-secret-salt-2024
-VALIDATOR_AGENT_DOMAIN=bob.example.com
-VALIDATOR_AGENT_SALT=validator-secret-salt-2024
-CLIENT_AGENT_DOMAIN=charlie.example.com
-CLIENT_AGENT_SALT=client-secret-salt-2024
-
-# Traditional Mode Keys (when USE_TEE_AUTH=false)
-SERVER_AGENT_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-VALIDATOR_AGENT_KEY=0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
-CLIENT_AGENT_KEY=0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a
-
-# TEE Simulator
-DSTACK_SIMULATOR_ENDPOINT=.dstack/sdk/simulator/dstack.sock
-
-# AI/ML (Optional)
-OPENAI_API_KEY=your-openai-key
+# Verify signature
+is_valid = verify_signature(message, signature, public_key)
 ```
+
+### Network Utilities
+
+```python
+from src.utils.network import (
+    get_web3_provider,
+    wait_for_transaction,
+    estimate_gas
+)
+
+# Get Web3 provider
+w3 = get_web3_provider("https://sepolia.base.org")
+
+# Wait for transaction
+receipt = await wait_for_transaction(w3, tx_hash)
+
+# Estimate gas
+gas_estimate = await estimate_gas(w3, transaction)
+```
+
+---
+
+## Error Handling
+
+### Custom Exceptions
+
+```python
+from src.agent.exceptions import (
+    RegistrationError,
+    TEEError,
+    ValidationError,
+    SigningError
+)
+
+try:
+    await agent.register()
+except RegistrationError as e:
+    print(f"Registration failed: {e}")
+```
+
+### Error Codes
+
+| Code | Description |
+|------|-------------|
+| `REG001` | Registration failed |
+| `TEE001` | TEE attestation error |
+| `VAL001` | Validation failed |
+| `SIG001` | Signing error |
+| `NET001` | Network error |
+
+---
+
+## Async/Await Patterns
+
+All SDK methods are async and should be awaited:
+
+```python
+import asyncio
+
+async def main():
+    # Create agent
+    agent = MyAgent(config, registries)
+
+    # Register agent
+    agent_id = await agent.register()
+
+    # Process task
+    result = await agent.process_task(task_data)
+
+    # Get attestation
+    attestation = await agent.get_attestation()
+
+# Run async function
+asyncio.run(main())
+```
+
+---
+
+## Plugin System
+
+Extend agents with plugins:
+
+```python
+class CustomPlugin:
+    def __init__(self, agent):
+        self.agent = agent
+
+    async def process(self, data):
+        # Custom processing
+        return enhanced_data
+
+# Add plugin to agent
+agent.add_plugin('custom', CustomPlugin(agent))
+
+# Use plugin
+plugin = agent.get_plugin('custom')
+result = await plugin.process(data)
+```
+
+---
+
+## Testing
+
+### Unit Testing
+
+```python
+import pytest
+from src.agent.base import AgentConfig, AgentRole
+
+@pytest.mark.asyncio
+async def test_agent_registration():
+    config = AgentConfig(...)
+    agent = TestAgent(config, registries)
+    agent_id = await agent.register()
+    assert agent_id > 0
+```
+
+### Mocking TEE
+
+```python
+from unittest.mock import AsyncMock
+
+mock_tee = AsyncMock()
+mock_tee.get_attestation.return_value = {'quote': b'...'}
+agent.tee_auth = mock_tee
+```
+
+---
+
+## Performance Optimization
+
+### Connection Pooling
+
+```python
+from src.utils.network import ConnectionPool
+
+pool = ConnectionPool(max_connections=10)
+agent.connection_pool = pool
+```
+
+### Caching
+
+```python
+from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def get_cached_data(key):
+    return fetch_data(key)
+```
+
+### Batch Operations
+
+```python
+# Batch multiple operations
+results = await asyncio.gather(
+    agent.process_task(task1),
+    agent.process_task(task2),
+    agent.process_task(task3)
+)
+```
+
+---
+
+## Best Practices
+
+1. **Always use async/await** for SDK methods
+2. **Handle errors gracefully** with try/except blocks
+3. **Use environment variables** for configuration
+4. **Implement proper logging** for debugging
+5. **Test with TEE simulator** before production
+6. **Use plugins** for extensibility
+7. **Cache frequently accessed data**
+8. **Batch operations** when possible
+
+---
+
+## Migration Guide
+
+For users migrating from the old codebase:
+
+### Old Pattern
+```python
+# Old way
+from agents.base_agent import BaseAgent
+agent = BaseAgent(private_key=key)
+```
+
+### New Pattern
+```python
+# New way
+from src.agent.base import BaseAgent, AgentConfig
+config = AgentConfig(...)
+agent = MyAgent(config, registries)
+```
+
+---
+
+## Support
+
+For additional help:
+- 📚 [Examples](../examples/)
+- 🚀 [Quickstart Guide](quickstart.md)
+- 🛠️ [Deployment Guide](deployment_guide.md)
+- 💬 [Community Discord](https://discord.gg/...)
+- 🐛 [Issue Tracker](https://github.com/...)

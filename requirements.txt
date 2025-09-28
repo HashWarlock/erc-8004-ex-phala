@@ -1,30 +1,17 @@
-# ERC-8004 Phala Cloud Example Dependencies
-
-# Core Web3 and Blockchain
+# Core dependencies
 web3>=6.0.0
-eth-account>=0.10.0
-eth-utils>=2.3.0
-py-solc-x>=2.0.0
+eth-account>=0.8.0
+python-dotenv>=1.0.0
+dstack-sdk>=0.2.0  # Updated for proper get_key and get_quote methods
 
-# AI and Agent Orchestration
-crewai>=0.165.1
-langchain>=0.1.0
-pydantic>=2.0.0
-
-# Phala Cloud TEE SDK
-dstack-sdk>=0.1.0
-
-# API and Web Framework
-fastapi>=0.104.0
-uvicorn>=0.24.0
-httpx>=0.25.0
-requests>=2.31.0
+# Async support
+aiohttp>=3.8.0
 
 # Utilities
-python-dotenv>=1.0.0
-click>=8.1.0
-rich>=13.0.0
+pydantic>=2.0.0
+typing-extensions>=4.5.0
 
-# Development Tools (optional)
-pytest>=7.4.0
-black>=23.0.0 
+# Optional: AI capabilities (install with pip install -e .[ai])
+# openai>=1.0.0
+# anthropic>=0.3.0
+# crewai>=0.1.0

@@ -1,0 +1,99 @@
+# ERC-8004 Project Cleanup and Documentation Update PRD
+
+## Project Overview
+The ERC-8004 Phala integration project requires comprehensive cleanup and documentation updates to maintain code quality, remove redundancies, and ensure all documentation accurately reflects the current codebase implementation.
+
+## Goals
+1. Remove unnecessary, duplicate, and deprecated files
+2. Consolidate and organize test files effectively
+3. Update all documentation to match current code implementation
+4. Clean up API-related files and structure
+5. Ensure all examples and demos work correctly
+6. Improve overall project maintainability
+
+## Scope
+
+### 1. File Cleanup and Removal
+- Remove demo.py from root (replaced by tests/demo.py)
+- Clean up duplicate or unused test files
+- Remove unnecessary data files if not actively used
+- Clean up build artifacts and temporary files
+- Consolidate scattered configuration files
+
+### 2. Test File Organization
+- Consolidate duplicate integration tests
+- Remove redundant API test files
+- Organize unit tests properly
+- Ensure test coverage is maintained while reducing duplication
+- Update test configuration files (pytest.ini, conftest.py)
+
+### 3. Documentation Updates
+- Update README.md to reflect current project state
+- Sync API documentation with actual implementation
+- Update architecture documentation
+- Ensure all markdown files in docs/ directory are current
+- Update deployment and development guides
+- Fix any broken links or outdated information
+
+### 4. API Cleanup
+- Review and clean up API structure in api/ directory
+- Ensure API documentation matches implementation
+- Clean up unused API endpoints or models
+- Update WebSocket implementation documentation
+
+### 5. Code Cleanup
+- Remove deprecated or unused agent implementations
+- Clean up unused imports and dependencies
+- Consolidate similar functionality
+- Update code comments and docstrings
+
+### 6. Examples and Demos
+- Ensure all demo scripts work with current codebase
+- Update example configurations
+- Verify deployment scripts function correctly
+- Test all provided examples
+
+### 7. Configuration Cleanup
+- Clean up Docker configuration files
+- Update environment configuration examples
+- Consolidate Makefile targets
+- Clean up deployment configurations
+
+## Success Criteria
+- All duplicate files removed
+- Documentation accurately reflects current implementation
+- All examples and demos work without errors
+- Test suite runs cleanly without deprecated warnings
+- Project structure is logical and maintainable
+- No broken links in documentation
+- All configuration files are current and functional
+
+## Out of Scope
+- Major feature additions or changes
+- Performance optimizations unrelated to cleanup
+- Refactoring of core business logic
+- Adding new test coverage (only maintaining existing coverage)
+
+## Acceptance Criteria
+1. Project builds and runs without warnings related to cleanup issues
+2. All documentation is up-to-date and accurate
+3. Test suite passes with no deprecated test files
+4. Examples and demos execute successfully
+5. File structure is clean and organized
+6. No duplicate or conflicting configuration files
+7. All API documentation matches actual endpoints and models
+
+## Priority Classification
+- High: Remove duplicate/conflicting files, update core documentation
+- Medium: Consolidate test files, clean up configuration
+- Low: Update minor documentation, clean up comments
+
+## Dependencies
+- Current codebase must remain functional throughout cleanup
+- Existing functionality should not be broken
+- Test coverage should be maintained or improved
+
+## Timeline Considerations
+- Cleanup should be done incrementally to avoid breaking changes
+- Documentation updates should follow code cleanup
+- Final verification should ensure all examples still work

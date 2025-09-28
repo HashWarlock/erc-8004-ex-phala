@@ -1,0 +1,124 @@
+{
+  "tags": {
+    "master": {
+      "tasks": [
+        {
+          "id": 1,
+          "title": "Create new TEE Agent SDK repository structure",
+          "description": "Initialize a new repository 'erc-8004-tee-agents' with clean SDK structure",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [],
+          "details": "Create the new repository with directories: src/agent, src/templates, src/utils, examples/, tests/, scripts/, docs/, config/. Set up configuration files: .env.example, requirements.txt, setup.py, Makefile, README.md",
+          "testStrategy": "Verify directory structure and configuration files are present",
+          "subtasks": []
+        },
+        {
+          "id": 2,
+          "title": "Extract and refactor BaseAgent class",
+          "description": "Create core BaseAgent class with clean abstractions",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [1],
+          "details": "Extract base_agent.py to src/agent/base.py. Separate TEE logic into tee_auth.py, EIP-712 logic into eip712.py, and create registry.py for contract interactions. Implement plugin system for extensibility.",
+          "testStrategy": "Unit tests for BaseAgent initialization, lifecycle methods, and plugin system",
+          "subtasks": []
+        },
+        {
+          "id": 3,
+          "title": "Implement TEE authentication module",
+          "description": "Create TEE authentication component with dstack SDK integration",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2],
+          "details": "Build TEEAuthenticator class in src/agent/tee_auth.py with methods: derive_address(), get_attestation(), sign_with_tee(). Support both TEE and fallback private key modes.",
+          "testStrategy": "Test TEE key derivation, attestation generation, and signing with simulator",
+          "subtasks": []
+        },
+        {
+          "id": 4,
+          "title": "Build ERC-8004 registry client",
+          "description": "Create registry client for contract interactions",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2],
+          "details": "Implement RegistryClient in src/agent/registry.py with methods for agent registration, feedback submission, validation requests. Use existing contract addresses on Base Sepolia.",
+          "testStrategy": "Integration tests with local blockchain for all registry operations",
+          "subtasks": []
+        },
+        {
+          "id": 5,
+          "title": "Create agent templates",
+          "description": "Build reusable agent templates for common use cases",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [2, 3, 4],
+          "details": "Create templates in src/templates/: ServerAgent for analysis, ValidatorAgent for validation, ClientAgent for feedback, CustomAgent as minimal template. Each extends BaseAgent.",
+          "testStrategy": "Test each template can be instantiated and perform basic operations",
+          "subtasks": []
+        },
+        {
+          "id": 6,
+          "title": "Develop quick setup script",
+          "description": "Create interactive setup script for new projects",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [5],
+          "details": "Build scripts/quick_setup.py for interactive project creation. Collect agent type, name, domain. Generate project structure, install dependencies, create .env file, generate agent code from templates.",
+          "testStrategy": "Test script creates working project in under 5 minutes",
+          "subtasks": []
+        },
+        {
+          "id": 7,
+          "title": "Implement deployment utilities",
+          "description": "Create one-click deployment tools for Phala Cloud",
+          "status": "pending",
+          "priority": "high",
+          "dependencies": [5],
+          "details": "Create scripts/deploy_agent.py for Phala Cloud deployment, register_agent.py for ERC-8004 registration, generate_keys.py for TEE key generation. Support Docker containerization.",
+          "testStrategy": "Test deployment to Phala testnet and registration on Base Sepolia",
+          "subtasks": []
+        },
+        {
+          "id": 8,
+          "title": "Create working examples",
+          "description": "Build example implementations demonstrating SDK usage",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [6, 7],
+          "details": "Create examples/basic_workflow/ with 3-agent demo, examples/ai_enhanced/ with CrewAI integration, examples/custom_validation/ for custom logic. Each with README and run scripts.",
+          "testStrategy": "Examples run successfully and demonstrate key features",
+          "subtasks": []
+        },
+        {
+          "id": 9,
+          "title": "Write comprehensive documentation",
+          "description": "Create complete documentation for the SDK",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [8],
+          "details": "Write docs/quickstart.md for 5-minute setup, api_reference.md for all classes/methods, deployment_guide.md for Phala Cloud, examples.md for walkthroughs. Focus on developer success.",
+          "testStrategy": "Documentation review and testing by following guides",
+          "subtasks": []
+        },
+        {
+          "id": 10,
+          "title": "Package and publish SDK",
+          "description": "Prepare SDK for distribution via PyPI",
+          "status": "pending",
+          "priority": "medium",
+          "dependencies": [9],
+          "details": "Configure setup.py with proper metadata, create PyPI package, test on test.pypi.org, publish to PyPI as 'erc-8004-tee-agents'. Add GitHub Actions for CI/CD.",
+          "testStrategy": "Install from PyPI and verify all functionality works",
+          "subtasks": []
+        }
+      ],
+      "metadata": {
+        "created": "2025-01-28T12:00:00Z",
+        "updated": "2025-01-28T12:00:00Z",
+        "description": "TEE Agent SDK Refactoring Tasks"
+      }
+    }
+  },
+  "currentTag": "master"
+}

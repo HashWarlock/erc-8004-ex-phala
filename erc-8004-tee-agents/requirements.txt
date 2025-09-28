@@ -1,0 +1,17 @@
+# Core dependencies
+web3>=6.0.0
+eth-account>=0.8.0
+python-dotenv>=1.0.0
+dstack-sdk>=0.2.0  # Updated for proper get_key and get_quote methods
+
+# Async support
+aiohttp>=3.8.0
+
+# Utilities
+pydantic>=2.0.0
+typing-extensions>=4.5.0
+
+# Optional: AI capabilities (install with pip install -e .[ai])
+# openai>=1.0.0
+# anthropic>=0.3.0
+# crewai>=0.1.0

@@ -1,0 +1,1 @@
+"""Test suite for ERC-8004 TEE Agent SDK."""

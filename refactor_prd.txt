@@ -1,0 +1,1209 @@
+## **Executive Summary**
+
+Transform your current repository into a streamlined, developer-friendly **TEE Agent SDK** that serves as the primary entry point for builders wanting to create trustless agents using ERC-8004 and Phala Cloud. This refactoring will create a clean separation of concerns, reduce complexity, and provide a plug-and-play experience.
+
+## **Current State Analysis**
+
+**Strengths:**
+- Complete ERC-8004 implementation with deployed contracts
+- Working TEE integration with Phala Cloud
+- Comprehensive agent examples (Server, Validator, Client)
+- Good test coverage and documentation
+
+**Pain Points:**
+- Mixed concerns (contracts + agents + API + demos)
+- Complex setup with multiple dependencies
+- Difficult to extract just the agent functionality
+- Heavy cognitive load for new builders
+
+## **Target Architecture: TEE Agent SDK**
+
+### **1. Repository Structure (New)**
+
+```
+erc-8004-tee-agents/
+├── README.md                    # Clear onboarding guide
+├── .env.example                 # Simplified environment config
+├── requirements.txt             # Python dependencies only
+├── setup.py                     # Package installation
+├── Makefile                     # Build & deploy commands
+├── 
+├── src/
+│   ├── __init__.py
+│   ├── agent/                   # Core agent framework
+│   │   ├── __init__.py
+│   │   ├── base.py              # BaseAgent class
+│   │   ├── tee_auth.py          # TEE authentication
+│   │   ├── eip712.py            # ERC-8004 signing
+│   │   └── registry.py          # Contract interactions
+│   │
+│   ├── templates/               # Agent templates
+│   │   ├── server_agent.py      # Market analysis template
+│   │   ├── validator_agent.py   # Validation template
+│   │   ├── client_agent.py      # Feedback template
+│   │   └── custom_agent.py      # Minimal custom template
+│   │
+│   └── utils/
+│       ├── config.py            # Configuration management
+│       ├── crypto.py            # Cryptographic utilities
+│       └── network.py           # Blockchain helpers
+│
+├── examples/                    # Working examples
+│   ├── basic_workflow/          # Simple 3-agent demo
+│   ├── ai_enhanced/             # With CrewAI integration
+│   └── custom_validation/       # Custom validation logic
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── e2e/
+│
+├── scripts/
+│   ├── deploy_agent.py          # One-click deployment
+│   ├── register_agent.py        # Registry setup
+│   └── generate_keys.py         # TEE key generation
+│
+├── docs/
+│   ├── quickstart.md
+│   ├── api_reference.md
+│   ├── deployment_guide.md
+│   └── examples.md
+│
+└── config/
+    ├── contracts.json           # Registry addresses
+    ├── networks.json            # Supported networks
+    └── templates.json           # Agent templates
+```
+
+### **2. Core Agent Framework Design**### **3. Implementation Phases**
+graph TB
+    subgraph "TEE Agent SDK"
+        BaseAgent[BaseAgent Class]
+        TEEAuth[TEE Authentication]
+        EIP712[EIP-712 Signer]
+        Registry[Registry Client]
+        
+        BaseAgent --> TEEAuth
+        BaseAgent --> EIP712
+        BaseAgent --> Registry
+    end
+    
+    subgraph "Agent Templates"
+        ServerTemplate[Server Agent Template]
+        ValidatorTemplate[Validator Agent Template] 
+        ClientTemplate[Client Agent Template]
+        CustomTemplate[Custom Agent Template]
+        
+        ServerTemplate -.-> BaseAgent
+        ValidatorTemplate -.-> BaseAgent
+        ClientTemplate -.-> BaseAgent
+        CustomTemplate -.-> BaseAgent
+    end
+    
+    subgraph "Phala Cloud TEE"
+        KeyDerivation[Key Derivation]
+        Attestation[Attestation Service]
+        SecureExecution[Secure Execution]
+    end
+    
+    subgraph "ERC-8004 Registries"
+        IdentityRegistry[Identity Registry<br/>0x000c5A70...]
+        ReputationRegistry[Reputation Registry<br/>0xa7b860b1...]
+        ValidationRegistry[Validation Registry<br/>0xA455e56C...]
+    end
+    
+    TEEAuth --> KeyDerivation
+    TEEAuth --> Attestation
+    Registry --> IdentityRegistry
+    Registry --> ReputationRegistry
+    Registry --> ValidationRegistry
+    
+    classDef sdk fill:#e1f5fe
+    classDef template fill:#f3e5f5
+    classDef tee fill:#e8f5e8
+    classDef contract fill:#fff3e0
+    
+    class BaseAgent,TEEAuth,EIP712,Registry sdk
+    class ServerTemplate,ValidatorTemplate,ClientTemplate,CustomTemplate template
+    class KeyDerivation,Attestation,SecureExecution tee
+    class IdentityRegistry,ReputationRegistry,ValidationRegistry contract
+
+### **3. Implementation Phases**
+
+## **Phase 1: Core Framework Extraction (Week 1)**
+
+### **Immediate Actions:**
+
+1. **Create New Repository Structure**
+   ```bash
+   mkdir erc-8004-tee-agents
+   cd erc-8004-tee-agents
+   git init
+   ```
+
+2. **Extract and Refactor Base Agent**
+   - Move `base_agent.py` → `src/agent/base.py`
+   - Extract TEE-specific logic → `src/agent/tee_auth.py` 
+   - Move EIP-712 logic → `src/agent/eip712.py`
+   - Create registry client → `src/agent/registry.py`
+
+3. **Simplify Environment Configuration**
+```
+# ERC-8004 TEE Agents Configuration
+
+# Network Configuration (Base Sepolia by default)
+RPC_URL=https://sepolia.base.org
+CHAIN_ID=84532
+
+# ERC-8004 Registry Addresses (Base Sepolia)
+IDENTITY_REGISTRY_ADDRESS=0x000c5A70B7269c5eD4238DcC6576e598614d3f70
+REPUTATION_REGISTRY_ADDRESS=0xa7b860b16a41Aa8b6990EB3Fec0dB34686f7EAde
+VALIDATION_REGISTRY_ADDRESS=0xA455e56CBE75aaa3F692d28d0fBFD1D44B64F70d
+TEE_VERIFIER_ADDRESS=0x1b841e88ba786027f39ecf9Cd160176b22E3603c
+
+# Agent Configuration
+AGENT_DOMAIN=your-domain.com
+AGENT_SALT=your-unique-salt-here
+
+# TEE Configuration
+USE_TEE_AUTH=true
+PHALA_ENDPOINT=https://api.phala.network
+
+# Optional: AI Services (for AI-enhanced agents)
+OPENAI_API_KEY=your-openai-key
+ANTHROPIC_API_KEY=your-anthropic-key
+
+# Optional: Development
+PRIVATE_KEY=your-fallback-private-key-for-testing
+DEBUG=false
+```
+
+4. **Design Clean Base Agent Interface**
+```
+"""
+ERC-8004 TEE Agent Base Class
+Provides core functionality for trustless agent interactions
+"""
+
+from abc import ABC, abstractmethod
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass
+from enum import Enum
+
+class AgentRole(Enum):
+    SERVER = "server"
+    VALIDATOR = "validator" 
+    CLIENT = "client"
+
+@dataclass
+class AgentConfig:
+    """Agent configuration parameters"""
+    domain: str
+    salt: str
+    role: AgentRole
+    rpc_url: str
+    chain_id: int
+    use_tee_auth: bool = True
+    private_key: Optional[str] = None
+
+@dataclass
+class RegistryAddresses:
+    """ERC-8004 registry contract addresses"""
+    identity: str
+    reputation: str
+    validation: str
+    tee_verifier: str
+
+class BaseAgent(ABC):
+    """
+    Base class for ERC-8004 TEE Agents
+    
+    Provides:
+    - TEE-secured key derivation and signing
+    - ERC-8004 registry interactions
+    - Agent lifecycle management
+    - Extensible plugin system
+    """
+    
+    def __init__(self, config: AgentConfig, registries: RegistryAddresses):
+        self.config = config
+        self.registries = registries
+        self.agent_id: Optional[int] = None
+        self.is_registered = False
+        
+        # Initialize core components
+        self._init_tee_auth()
+        self._init_registry_client()
+        self._init_signer()
+    
+    # Core Agent Lifecycle
+    async def register(self) -> int:
+        """Register agent in ERC-8004 Identity Registry"""
+        if self.is_registered:
+            return self.agent_id
+            
+        agent_address = await self._get_agent_address()
+        
+        # Create agent card
+        agent_card = await self._create_agent_card()
+        
+        # Register on-chain
+        self.agent_id = await self._registry_client.register_agent(
+            domain=self.config.domain,
+            agent_address=agent_address,
+            agent_card=agent_card
+        )
+        
+        self.is_registered = True
+        return self.agent_id
+    
+    async def get_attestation(self) -> Dict[str, Any]:
+        """Get TEE attestation for this agent"""
+        return await self._tee_auth.get_attestation()
+    
+    async def sign_message(self, message: Dict[str, Any]) -> str:
+        """Sign message using EIP-712 standard"""
+        return await self._signer.sign_typed_data(message)
+    
+    # Registry Interactions
+    async def submit_reputation_feedback(
+        self, 
+        target_agent_id: int, 
+        rating: int, 
+        data: Dict[str, Any]
+    ) -> str:
+        """Submit feedback to reputation registry"""
+        return await self._registry_client.submit_feedback(
+            target_agent_id, rating, data
+        )
+    
+    async def request_validation(
+        self, 
+        validator_agent_id: int, 
+        data_hash: str
+    ) -> str:
+        """Request validation from validator agent"""
+        return await self._registry_client.request_validation(
+            validator_agent_id, data_hash
+        )
+    
+    async def submit_validation_response(
+        self, 
+        data_hash: str, 
+        response: int
+    ) -> str:
+        """Submit validation response"""
+        return await self._registry_client.submit_validation_response(
+            data_hash, response
+        )
+    
+    # Abstract Methods - Implement in derived classes
+    @abstractmethod
+    async def process_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process incoming task - implement agent-specific logic"""
+        pass
+    
+    @abstractmethod
+    async def _create_agent_card(self) -> Dict[str, Any]:
+        """Create agent card with capabilities and endpoints"""
+        pass
+    
+    # Plugin System
+    def add_plugin(self, plugin_name: str, plugin_instance):
+        """Add plugin for extended functionality"""
+        if not hasattr(self, '_plugins'):
+            self._plugins = {}
+        self._plugins[plugin_name] = plugin_instance
+    
+    def get_plugin(self, plugin_name: str):
+        """Get plugin instance"""
+        return getattr(self, '_plugins', {}).get(plugin_name)
+    
+    # Private Implementation Methods
+    def _init_tee_auth(self):
+        """Initialize TEE authentication"""
+        from .tee_auth import TEEAuthenticator
+        self._tee_auth = TEEAuthenticator(
+            domain=self.config.domain,
+            salt=self.config.salt,
+            use_tee=self.config.use_tee_auth
+        )
+    
+    def _init_registry_client(self):
+        """Initialize registry client"""
+        from .registry import RegistryClient
+        self._registry_client = RegistryClient(
+            rpc_url=self.config.rpc_url,
+            chain_id=self.config.chain_id,
+            registries=self.registries
+        )
+    
+    def _init_signer(self):
+        """Initialize EIP-712 signer"""
+        from .eip712 import EIP712Signer
+        self._signer = EIP712Signer(
+            domain_name="ERC8004-TEE-Agents",
+            domain_version="1.0.0",
+            chain_id=self.config.chain_id
+        )
+    
+    async def _get_agent_address(self) -> str:
+        """Get agent's blockchain address"""
+        if self.config.use_tee_auth:
+            return await self._tee_auth.derive_address()
+        else:
+            # Fallback to private key
+            from eth_account import Account
+            account = Account.from_key(self.config.private_key)
+            return account.address
+
+# Factory function for easy agent creation
+def create_agent(agent_type: str, config: AgentConfig, registries: RegistryAddresses):
+    """Factory function to create specific agent types"""
+    if agent_type == "server":
+        from ..templates.server_agent import ServerAgent
+        return ServerAgent(config, registries)
+    elif agent_type == "validator":
+        from ..templates.validator_agent import ValidatorAgent
+        return ValidatorAgent(config, registries)
+    elif agent_type == "client":
+        from ..templates.client_agent import ClientAgent
+        return ClientAgent(config, registries)
+    else:
+        raise ValueError(f"Unknown agent type: {agent_type}")
+```
+
+### **Phase 2: Developer Experience (Week 2)**
+
+5. **Create One-Command Setup**### 
+#!/usr/bin/env python3
+"""
+ERC-8004 TEE Agent Quick Setup
+One-command setup for new builders
+"""
+
+import os
+import sys
+import subprocess
+import json
+from pathlib import Path
+
+def setup_agent_project():
+    """Interactive setup for new agent project"""
+    
+    print("🤖 ERC-8004 TEE Agent Quick Setup")
+    print("=" * 40)
+    
+    # Collect user preferences
+    agent_type = input("Agent type (server/validator/client/custom): ").strip().lower()
+    if agent_type not in ['server', 'validator', 'client', 'custom']:
+        agent_type = 'server'
+    
+    agent_name = input("Agent name: ").strip() or f"my-{agent_type}-agent"
+    domain = input("Agent domain (e.g., myagent.com): ").strip() or "localhost"
+    
+    use_ai = input("Enable AI capabilities? (y/N): ").strip().lower() == 'y'
+    
+    print(f"\n📦 Setting up {agent_name}...")
+    
+    # Create project directory
+    project_dir = Path(agent_name)
+    project_dir.mkdir(exist_ok=True)
+    os.chdir(project_dir)
+    
+    # Install dependencies
+    print("📥 Installing dependencies...")
+    subprocess.run([
+        sys.executable, "-m", "pip", "install", 
+        "erc-8004-tee-agents",
+        "web3>=6.0.0",
+        "eth-account>=0.8.0"
+    ])
+    
+    if use_ai:
+        subprocess.run([
+            sys.executable, "-m", "pip", "install",
+            "openai", "anthropic", "crewai"
+        ])
+    
+    # Generate environment file
+    create_env_file(domain)
+    
+    # Generate agent template
+    create_agent_template(agent_type, agent_name, use_ai)
+    
+    # Generate deployment script
+    create_deployment_script(agent_name)
+    
+    # Generate README
+    create_readme(agent_name, agent_type)
+    
+    print(f"✅ Setup complete!")
+    print(f"""
+Next steps:
+1. cd {agent_name}
+2. Edit .env with your configuration
+3. Run: python deploy.py
+4. Your agent will be registered and ready!
+
+Documentation: https://docs.erc8004-tee-agents.dev
+""")
+
+def create_env_file(domain):
+    """Create .env file with defaults"""
+    env_content = f"""# {domain} Agent Configuration
+
+# Network (Base Sepolia - ready to use!)
+RPC_URL=https://sepolia.base.org
+CHAIN_ID=84532
+
+# ERC-8004 Registries (Pre-deployed)
+IDENTITY_REGISTRY_ADDRESS=0x000c5A70B7269c5eD4238DcC6576e598614d3f70
+REPUTATION_REGISTRY_ADDRESS=0xa7b860b16a41Aa8b6990EB3Fec0dB34686f7EAde
+VALIDATION_REGISTRY_ADDRESS=0xA455e56CBE75aaa3F692d28d0fBFD1D44B64F70d
+TEE_VERIFIER_ADDRESS=0x1b841e88ba786027f39ecf9Cd160176b22E3603c
+
+# Your Agent
+AGENT_DOMAIN={domain}
+AGENT_SALT={domain}-salt-$(openssl rand -hex 8)
+
+# TEE Settings
+USE_TEE_AUTH=true
+PHALA_ENDPOINT=https://api.phala.network
+
+# For testing (remove in production)
+PRIVATE_KEY=your-test-private-key-here
+"""
+    
+    with open('.env', 'w') as f:
+        f.write(env_content)
+
+def create_agent_template(agent_type, agent_name, use_ai):
+    """Create agent implementation file"""
+    
+    if agent_type == 'server':
+        template = create_server_template(agent_name, use_ai)
+    elif agent_type == 'validator':
+        template = create_validator_template(agent_name)
+    elif agent_type == 'client':
+        template = create_client_template(agent_name)
+    else:
+        template = create_custom_template(agent_name)
+    
+    with open(f'{agent_name.replace("-", "_")}.py', 'w') as f:
+        f.write(template)
+
+def create_server_template(agent_name, use_ai):
+    ai_import = "from crewai import Agent, Task, Crew" if use_ai else ""
+    ai_processing = """
+        # AI-Enhanced Processing
+        if hasattr(self, 'ai_agent'):
+            analysis = self.ai_agent.execute(task_data)
+            result.update(analysis)
+    """ if use_ai else """
+        # Simple processing logic
+        result['analysis'] = f"Processed: {task_data.get('query', 'No query')}"
+        result['confidence'] = 0.95
+    """
+    
+    return f"""#!/usr/bin/env python3
+\"\"\"
+{agent_name} - ERC-8004 TEE Server Agent
+Processes tasks and provides analysis
+\"\"\"
+
+from erc8004_tee_agents import BaseAgent, AgentConfig, AgentRole
+{ai_import}
+
+class {agent_name.replace('-', '').title()}Agent(BaseAgent):
+    \"\"\"Server agent for processing analysis tasks\"\"\"
+    
+    def __init__(self, config, registries):
+        super().__init__(config, registries)
+        self.setup_capabilities()
+    
+    async def process_task(self, task_data):
+        \"\"\"Process incoming analysis task\"\"\"
+        print(f"🔍 Processing task: {{task_data.get('task_id')}}")
+        
+        result = {{
+            'task_id': task_data.get('task_id'),
+            'agent_id': self.agent_id,
+            'status': 'completed',
+            'timestamp': str(datetime.utcnow())
+        }}
+        
+        {ai_processing}
+        
+        return result
+    
+    async def _create_agent_card(self):
+        \"\"\"Create agent card describing capabilities\"\"\"
+        return {{
+            'name': '{agent_name}',
+            'description': 'TEE-secured analysis agent',
+            'capabilities': ['market_analysis', 'data_processing'],
+            'trust_models': ['tee_attestation'],
+            'endpoints': {{
+                'process': f'https://{{self.config.domain}}/process'
+            }}
+        }}
+    
+    def setup_capabilities(self):
+        \"\"\"Setup agent-specific capabilities\"\"\"
+        # Add your custom logic here
+        pass
+
+if __name__ == "__main__":
+    # Quick test
+    from erc8004_tee_agents.utils import load_config
+    config, registries = load_config()
+    
+    agent = {agent_name.replace('-', '').title()}Agent(config, registries)
+    print("Agent created successfully!")
+"""
+
+def create_deployment_script(agent_name):
+    """Create one-click deployment script"""
+    content = f"""#!/usr/bin/env python3
+\"\"\"
+Deploy {agent_name} to Phala Cloud and register with ERC-8004
+\"\"\"
+
+import asyncio
+import os
+from dotenv import load_dotenv
+from erc8004_tee_agents.utils import load_config
+from {agent_name.replace('-', '_')} import {agent_name.replace('-', '').title()}Agent
+
+async def deploy():
+    \"\"\"Deploy and register the agent\"\"\"
+    load_dotenv()
+    
+    print("🚀 Deploying {agent_name}...")
+    
+    # Load configuration
+    config, registries = load_config()
+    
+    # Create agent
+    agent = {agent_name.replace('-', '').title()}Agent(config, registries)
+    
+    # Register with ERC-8004
+    print("📝 Registering with ERC-8004...")
+    agent_id = await agent.register()
+    print(f"✅ Agent registered with ID: {{agent_id}}")
+    
+    # Get TEE attestation
+    print("🔐 Getting TEE attestation...")
+    attestation = await agent.get_attestation()
+    print(f"✅ Attestation received: {{attestation['quote'][:20]}}...")
+    
+    print(f"🎉 {agent_name} deployed successfully!")
+    print(f"Agent ID: {{agent_id}}")
+    print(f"Domain: {{config.domain}}")
+    print(f"Ready to process tasks!")
+
+if __name__ == "__main__":
+    asyncio.run(deploy())
+"""
+    
+    with open('deploy.py', 'w') as f:
+        f.write(content)
+    
+    # Make executable
+    os.chmod('deploy.py', 0o755)
+
+def create_readme(agent_name, agent_type):
+    """Create project README"""
+    content = f"""# {agent_name}
+
+ERC-8004 TEE {agent_type.title()} Agent
+
+## Quick Start
+
+1. **Configure**: Edit `.env` with your settings
+2. **Deploy**: `python deploy.py`
+3. **Test**: `python test_{agent_name.replace('-', '_')}.py`
+
+## What This Does
+
+- ✅ Registers as ERC-8004 {agent_type} agent
+- ✅ TEE-secured key derivation  
+- ✅ Blockchain attestation
+- ✅ Ready for trustless interactions
+
+## Architecture
+
+```
+Your Agent → TEE Security → ERC-8004 Registry → Trustless Network
+```
+
+## Documentation
+
+- [ERC-8004 Standard](https://eips.ethereum.org/EIPS/eip-8004)
+- [TEE Agents Guide](https://docs.erc8004-tee-agents.dev)
+- [Phala Cloud](https://phala.network)
+
+## Support
+
+- Discord: [ERC-8004 Community](https://discord.gg/erc8004)
+- Issues: [GitHub Issues](https://github.com/your-org/erc-8004-tee-agents/issues)
+"""
+    
+    with open('README.md', 'w') as f:
+        f.write(content)
+
+if __name__ == "__main__":
+    setup_agent_project()
+```
+
+**6. Simple Makefile for Common Operations**
+```
+# ERC-8004 TEE Agents Makefile
+# Simple commands for agent development and deployment
+
+.PHONY: help install test deploy clean examples docs
+
+# Default target
+help:
+	@echo "🤖 ERC-8004 TEE Agents"
+	@echo "====================="
+	@echo ""
+	@echo "Quick Commands:"
+	@echo "  make install    - Install dependencies"
+	@echo "  make setup      - Interactive project setup"
+	@echo "  make test       - Run all tests"
+	@echo "  make deploy     - Deploy agent to Phala Cloud"
+	@echo "  make examples   - Run example workflows"
+	@echo ""
+	@echo "Development:"
+	@echo "  make lint       - Code linting"
+	@echo "  make format     - Format code"
+	@echo "  make docs       - Generate documentation"
+	@echo "  make clean      - Clean build artifacts"
+
+# Installation and Setup
+install:
+	@echo "📦 Installing ERC-8004 TEE Agents..."
+	pip install -e .
+	pip install -r requirements-dev.txt
+
+setup:
+	@echo "🚀 Starting interactive setup..."
+	python scripts/quick_setup.py
+
+# Testing
+test:
+	@echo "🧪 Running tests..."
+	pytest tests/ -v
+
+test-unit:
+	@echo "🔬 Running unit tests..."
+	pytest tests/unit/ -v
+
+test-integration:
+	@echo "🔗 Running integration tests..."
+	pytest tests/integration/ -v
+
+test-e2e:
+	@echo "🎯 Running end-to-end tests..."
+	pytest tests/e2e/ -v
+
+# Deployment
+deploy:
+	@echo "🚀 Deploying agent..."
+	python scripts/deploy_agent.py
+
+register:
+	@echo "📝 Registering agent with ERC-8004..."
+	python scripts/register_agent.py
+
+# Examples
+examples:
+	@echo "📚 Running examples..."
+	@echo "1. Basic workflow..."
+	python examples/basic_workflow/run.py
+	@echo "2. AI-enhanced agent..."
+	python examples/ai_enhanced/run.py
+
+example-basic:
+	@echo "🏃 Running basic example..."
+	python examples/basic_workflow/run.py
+
+example-ai:
+	@echo "🧠 Running AI-enhanced example..."
+	python examples/ai_enhanced/run.py
+
+# Development Tools
+lint:
+	@echo "🔍 Linting code..."
+	flake8 src/ tests/ examples/
+	pylint src/
+
+format:
+	@echo "✨ Formatting code..."
+	black src/ tests/ examples/
+	isort src/ tests/ examples/
+
+type-check:
+	@echo "🔎 Type checking..."
+	mypy src/
+
+# Documentation
+docs:
+	@echo "📖 Generating documentation..."
+	sphinx-build -b html docs/ docs/_build/
+
+docs-serve:
+	@echo "🌐 Serving documentation..."
+	cd docs/_build && python -m http.server 8080
+
+# Utilities
+generate-keys:
+	@echo "🔑 Generating TEE keys..."
+	python scripts/generate_keys.py
+
+check-deployment:
+	@echo "🔍 Checking deployment status..."
+	python scripts/check_deployment.py
+
+# Cleanup
+clean:
+	@echo "🧹 Cleaning build artifacts..."
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
+	rm -rf .pytest_cache/
+	rm -rf __pycache__/
+	find . -name "*.pyc" -delete
+	find . -name ".DS_Store" -delete
+
+# Advanced Operations
+benchmark:
+	@echo "⚡ Running performance benchmarks..."
+	python scripts/benchmark.py
+
+security-check:
+	@echo "🔒 Running security checks..."
+	bandit -r src/
+	safety check
+
+# Package Management
+build:
+	@echo "📦 Building package..."
+	python setup.py sdist bdist_wheel
+
+publish-test:
+	@echo "🚀 Publishing to test PyPI..."
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+publish:
+	@echo "🚀 Publishing to PyPI..."
+	twine upload dist/*
+
+# Environment Management
+env-create:
+	@echo "🌍 Creating virtual environment..."
+	python -m venv venv
+	@echo "Activate with: source venv/bin/activate"
+
+env-requirements:
+	@echo "📋 Generating requirements.txt..."
+	pip freeze > requirements.txt
+
+# Quick Development Workflow
+dev: install lint test
+	@echo "✅ Development workflow complete!"
+
+# Production Checks
+pre-deploy: lint type-check test security-check
+	@echo "✅ Pre-deployment checks passed!"
+
+# Help for specific components
+help-agents:
+	@echo "🤖 Agent Development Help"
+	@echo "========================"
+	@echo "Agent types: server, validator, client, custom"
+	@echo "Create new agent: make setup"
+	@echo "Test agent: python -m pytest tests/test_your_agent.py"
+
+help-tee:
+	@echo "🔐 TEE Integration Help"
+	@echo "======================="
+	@echo "Generate keys: make generate-keys"
+	@echo "Check attestation: python scripts/check_attestation.py"
+	@echo "TEE docs: https://docs.phala.network"
+
+help-registry:
+	@echo "📝 Registry Integration Help"
+	@echo "==========================="
+	@echo "Register agent: make register"
+	@echo "Check status: make check-deployment"
+	@echo "Registry docs: https://eips.ethereum.org/EIPS/eip-8004"
+```
+
+## **Phase 3: Migration & Polish (Week 3)**
+
+### **7. Step-by-Step Refactoring Execution**## **Risk Mitigation & Success Factors**
+```
+# ERC-8004 TEE Agents Refactoring Checklist
+
+## Day 1-2: Repository Setup
+
+### ✅ Initialize New Repository
+```bash
+# Create new repo
+mkdir erc-8004-tee-agents
+cd erc-8004-tee-agents
+git init
+
+# Set up basic structure
+mkdir -p src/agent src/templates src/utils
+mkdir -p examples/basic_workflow examples/ai_enhanced
+mkdir -p tests/unit tests/integration tests/e2e
+mkdir -p scripts docs config
+```
+
+### ✅ Copy Core Files
+```bash
+# From current repo, copy and refactor:
+cp agents/base_agent.py → src/agent/base.py
+cp agents/tee_*.py → src/agent/tee_auth.py
+cp agents/eip712_signer.py → src/agent/eip712.py
+
+# Create new files:
+touch src/agent/registry.py
+touch src/agent/__init__.py
+touch src/utils/config.py
+touch src/utils/crypto.py
+touch src/utils/network.py
+```
+
+### ✅ Configuration Files
+```bash
+# Create simplified configs
+touch .env.example
+touch requirements.txt
+touch setup.py
+touch Makefile
+touch README.md
+```
+
+## Day 3-4: Core Framework
+
+### ✅ Implement BaseAgent Class
+- [ ] Extract common functionality from existing agents
+- [ ] Add plugin system for extensibility
+- [ ] Implement TEE authentication integration
+- [ ] Add ERC-8004 registry client
+- [ ] Create factory pattern for agent creation
+
+### ✅ Registry Client
+```python
+# src/agent/registry.py
+class RegistryClient:
+    async def register_agent()
+    async def submit_feedback()
+    async def request_validation()
+    async def submit_validation_response()
+```
+
+### ✅ TEE Authentication Module
+```python
+# src/agent/tee_auth.py
+class TEEAuthenticator:
+    async def derive_address()
+    async def get_attestation()
+    async def sign_with_tee()
+```
+
+## Day 5-6: Agent Templates
+
+### ✅ Server Agent Template
+```bash
+# src/templates/server_agent.py
+class ServerAgent(BaseAgent):
+    async def process_task()
+    async def _create_agent_card()
+```
+
+### ✅ Validator Agent Template
+```bash
+# src/templates/validator_agent.py
+class ValidatorAgent(BaseAgent):
+    async def validate_task()
+    async def submit_validation()
+```
+
+### ✅ Client Agent Template
+```bash
+# src/templates/client_agent.py
+class ClientAgent(BaseAgent):
+    async def submit_feedback()
+    async def request_service()
+```
+
+### ✅ Custom Agent Template
+```bash
+# src/templates/custom_agent.py
+class CustomAgent(BaseAgent):
+    # Minimal template for custom implementations
+```
+
+## Day 7-8: Developer Experience
+
+### ✅ Quick Setup Script
+```bash
+# scripts/quick_setup.py
+def setup_agent_project():
+    # Interactive setup for new builders
+    # Generate project structure
+    # Install dependencies
+    # Create environment files
+```
+
+### ✅ Deployment Scripts
+```bash
+# scripts/deploy_agent.py
+async def deploy_to_phala():
+    # One-click deployment to Phala Cloud
+    # Register with ERC-8004
+    # Verify deployment
+```
+
+### ✅ Utility Scripts
+```bash
+# scripts/generate_keys.py
+# scripts/register_agent.py
+# scripts/check_deployment.py
+```
+
+## Day 9-10: Examples & Documentation
+
+### ✅ Basic Workflow Example
+```bash
+# examples/basic_workflow/
+run.py              # Complete 3-agent demo
+server_config.py    # Server agent setup
+validator_config.py # Validator agent setup
+client_config.py    # Client agent setup
+README.md          # Step-by-step guide
+```
+
+### ✅ AI-Enhanced Example
+```bash
+# examples/ai_enhanced/
+ai_server_agent.py  # CrewAI integration
+run_ai_demo.py     # AI-powered workflow
+README.md          # AI capabilities guide
+```
+
+### ✅ Documentation
+```bash
+# docs/
+quickstart.md       # 5-minute setup guide
+api_reference.md    # Complete API docs
+deployment_guide.md # Phala Cloud deployment
+examples.md         # Example walkthroughs
+troubleshooting.md  # Common issues
+```
+
+## Day 11-12: Testing & Validation
+
+### ✅ Unit Tests
+```bash
+# tests/unit/
+test_base_agent.py
+test_tee_auth.py
+test_registry_client.py
+test_eip712_signer.py
+```
+
+### ✅ Integration Tests
+```bash
+# tests/integration/
+test_agent_registration.py
+test_tee_integration.py
+test_registry_operations.py
+```
+
+### ✅ End-to-End Tests
+```bash
+# tests/e2e/
+test_complete_workflow.py
+test_ai_enhanced_workflow.py
+test_custom_agent.py
+```
+
+## Day 13-14: Polish & Release
+
+### ✅ Package Configuration
+```python
+# setup.py
+setup(
+    name="erc-8004-tee-agents",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
+    entry_points={
+        "console_scripts": [
+            "erc8004-setup=scripts.quick_setup:main",
+            "erc8004-deploy=scripts.deploy_agent:main",
+        ]
+    }
+)
+```
+
+### ✅ README Optimization
+- [ ] Clear value proposition
+- [ ] 30-second quick start
+- [ ] Visual architecture diagram
+- [ ] Link to examples and docs
+
+### ✅ Release Preparation
+- [ ] Version tagging
+- [ ] Release notes
+- [ ] PyPI package publishing
+- [ ] Docker image (optional)
+
+## Validation Criteria
+
+### ✅ Builder Experience Test
+```bash
+# Should work in < 5 minutes
+git clone https://github.com/your-org/erc-8004-tee-agents
+cd erc-8004-tee-agents
+pip install -e .
+erc8004-setup
+# Follow prompts
+python deploy.py
+# Agent deployed and registered!
+```
+
+### ✅ Simplicity Check
+- [ ] Single dependency install
+- [ ] Zero configuration for testing
+- [ ] Clear error messages
+- [ ] One-command deployment
+- [ ] Working examples out of the box
+
+### ✅ Extensibility Validation
+- [ ] Easy to create custom agents
+- [ ] Plugin system works
+- [ ] Configuration is flexible
+- [ ] Multiple deployment targets
+- [ ] AI integration is optional
+
+## Success Metrics
+
+- **Time to First Agent**: < 5 minutes
+- **Lines of Code**: < 50 for simple agent
+- **Dependencies**: < 10 core packages
+- **Setup Steps**: < 3 commands
+- **Documentation**: Complete but concise
+
+## Migration from Current Repo
+
+### ✅ What to Keep
+- [ ] Smart contract addresses
+- [ ] Core agent logic (refactored)
+- [ ] TEE integration patterns
+- [ ] Test scenarios
+
+### ✅ What to Remove
+- [ ] Contract compilation/deployment
+- [ ] Complex demo orchestration
+- [ ] Heavyweight dependencies
+- [ ] Multiple environment managers
+
+### ✅ What to Simplify
+- [ ] Environment configuration
+- [ ] Agent templates
+- [ ] Test setup
+- [ ] Documentation structure
+```
+
+### **Technical Risks**
+
+| **Risk** | **Mitigation** | **Timeline** |
+|----------|----------------|--------------|
+| TEE Integration Complexity | Create abstraction layer, comprehensive testing | Week 1-2 |
+| Registry Interaction Failures | Robust error handling, retry mechanisms | Week 2 |
+| Key Management Issues | Clear documentation, fallback mechanisms | Week 1 |
+| Version Compatibility | Pin dependency versions, test matrix | Week 3 |
+
+### **Developer Experience Risks**
+
+| **Risk** | **Mitigation** | **Timeline** |
+|----------|----------------|--------------|
+| Setup Complexity | One-command setup script | Week 2 |
+| Documentation Gaps | Examples-driven documentation | Week 3 |
+| Learning Curve | Progressive examples (simple → advanced) | Week 3 |
+| Platform Lock-in | Abstract platform-specific code | Week 1 |
+
+## **Success Metrics & KPIs**
+
+### **Primary Metrics**
+- **Time to First Agent Deployed**: Target < 5 minutes
+- **Repository Stars/Forks**: Growth tracking
+- **Community Adoption**: Issues, PRs, discussions
+- **Builder Retention**: Return usage patterns
+
+### **Technical Metrics**
+- **Test Coverage**: > 90%
+- **Setup Success Rate**: > 95%
+- **Documentation Completeness**: All APIs documented
+- **Performance**: Agent deployment < 30 seconds
+
+## **Post-Refactoring Roadmap**
+
+### **Quarter 1: Foundation**
+- [x] Repository refactoring (3 weeks)
+- [ ] Community feedback integration (1 week)
+- [ ] PyPI package publishing (1 week)
+- [ ] Initial builder onboarding (ongoing)
+
+### **Quarter 2: Ecosystem Growth**
+- [ ] Advanced agent templates (server clusters, multi-chain)
+- [ ] Visual agent builder (low-code interface)
+- [ ] Monitoring & analytics dashboard
+- [ ] Third-party integrations (Discord bots, APIs)
+
+### **Quarter 3: Platform Features**
+- [ ] Agent marketplace
+- [ ] Reputation scoring algorithms
+- [ ] Cross-chain bridge support
+- [ ] Enterprise security features
+
+## **Immediate Next Steps**
+
+### **This Week**
+1. **Create new repository**: `erc-8004-tee-agents`
+2. **Extract BaseAgent class** from current codebase
+3. **Set up basic project structure** with the new layout
+4. **Create simplified .env.example** with your deployed contracts
+
+### **Week 2**
+1. **Implement registry client** using your existing contract addresses
+2. **Create agent templates** (server, validator, client)
+3. **Build quick setup script** for one-command deployment
+4. **Add comprehensive testing** for core components
+
+### **Week 3**
+1. **Create working examples** that demonstrate value immediately
+2. **Write documentation** focused on builder success
+3. **Package for distribution** (PyPI, Docker)
+4. **Launch with builder community** and gather feedback
+
+## **Budget & Resources**
+
+### **Development Time**
+- **Week 1**: Core refactoring (40 hours)
+- **Week 2**: Developer experience (30 hours)
+- **Week 3**: Documentation & examples (20 hours)
+- **Total**: ~90 hours over 3 weeks
+
+### **Success Dependencies**
+- Maintain current smart contract deployments
+- Preserve TEE integration patterns
+- Keep existing test coverage
+- Smooth transition for current users

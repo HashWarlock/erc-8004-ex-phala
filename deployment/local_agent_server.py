@@ -86,18 +86,29 @@ async def startup_event():
         print(f"✅ Attestation generated: {quote_size} bytes")
 
     # Create agent configuration
+    from src.agent.base import AgentRole
+
     config = AgentConfig(
         domain=domain,
+        salt=salt,
+        role=AgentRole.SERVER,
         chain_id=84532,  # Base Sepolia
         rpc_url="https://sepolia.base.org",
+        use_tee_auth=True,
         private_key=tee_auth.private_key
     )
 
-    # Registry addresses (from .env.production)
+    # Registry addresses (new contracts from environment or defaults)
+    identity_addr = os.getenv("IDENTITY_REGISTRY_ADDRESS", "0x19fad4adD9f8C4A129A078464B22E1506275FbDd")
+    reputation_addr = os.getenv("REPUTATION_REGISTRY_ADDRESS", "0xA13497975fd3f6cA74081B074471C753b622C903")
+    validation_addr = os.getenv("VALIDATION_REGISTRY_ADDRESS", "0x6e24aA15e134AF710C330B767018d739CAeCE293")
+    tee_verifier_addr = os.getenv("TEE_VERIFIER_ADDRESS", "0x1b841e88ba786027f39ecf9Cd160176b22E3603c")
+
     registries = RegistryAddresses(
-        identity_registry="0x000c5A70B7269c5eD4238DcC6576e598614d3f70",
-        reputation_registry=None,
-        validation_registry=None
+        identity=identity_addr,
+        reputation=reputation_addr,
+        validation=validation_addr,
+        tee_verifier=tee_verifier_addr
     )
 
     # Initialize agent
@@ -147,11 +158,13 @@ async def get_status():
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
+    agent_address = await agent._get_agent_address()
+
     return {
         "status": "operational",
         "agent": {
             "domain": agent.config.domain,
-            "address": agent.agent_address,
+            "address": agent_address,
             "agent_id": agent.agent_id,
             "is_registered": agent.is_registered,
             "chain_id": agent.config.chain_id

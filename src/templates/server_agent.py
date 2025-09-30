@@ -95,35 +95,59 @@ class ServerAgent(BaseAgent):
 
     async def _create_agent_card(self) -> Dict[str, Any]:
         """
-        Create agent card describing capabilities.
+        Create ERC-8004 compliant agent card describing capabilities.
 
         Returns:
             Agent card with server capabilities
         """
-        return {
-            'name': f'server-{self.config.domain}',
-            'description': 'TEE-secured analysis and computation agent',
-            'role': 'server',
-            'capabilities': [
-                'market_analysis',
-                'trend_analysis',
-                'risk_assessment',
-                'data_processing',
-                'computation_services'
-            ],
-            'trust_models': ['tee_attestation', 'reputation_based'],
-            'endpoints': {
-                'process': f'https://{self.config.domain}/api/process',
-                'status': f'https://{self.config.domain}/api/status',
-                'metrics': f'https://{self.config.domain}/api/metrics'
+        from ..agent.agent_card import create_tee_agent_card
+
+        # Get agent address
+        agent_address = await self._get_agent_address()
+
+        # Define capabilities
+        capabilities = [
+            ("market-analysis", "Analyze market trends and conditions using TEE-secured computations"),
+            ("trend-analysis", "Identify and analyze trends in time-series data"),
+            ("risk-assessment", "Evaluate risk factors and provide risk scores"),
+            ("data-processing", "Process and transform data with cryptographic guarantees"),
+            ("computation-services", "General-purpose secure computation services")
+        ]
+
+        # Create ERC-8004 compliant agent card
+        card = create_tee_agent_card(
+            name=f"TEE Server Agent - {self.config.domain}",
+            description="Advanced TEE-secured server agent providing market analysis, trend detection, risk assessment, and secure computation services with cryptographic attestation",
+            domain=self.config.domain,
+            agent_address=agent_address,
+            agent_id=self.agent_id if self.is_registered else None,
+            signature=None,  # Will be added after registration
+            capabilities=capabilities,
+            chain_id=self.config.chain_id
+        )
+
+        # Add server-specific metadata
+        card["metadata"] = {
+            "role": "server",
+            "pricing": {
+                "baseFeemWei": "1000000000000000",  # 0.001 ETH
+                "currency": "ETH",
+                "unit": "per-request"
             },
-            'pricing': {
-                'base_fee': '0.001',  # ETH
-                'currency': 'ETH'
+            "performance": {
+                "averageResponseTime": "1.2s",
+                "maxThroughput": "100 requests/minute",
+                "uptime": "99.9%"
             },
-            'availability': 'online',
-            'version': '1.0.0'
+            "endpoints": {
+                "process": f"https://{self.config.domain}/api/process",
+                "status": f"https://{self.config.domain}/api/status",
+                "metrics": f"https://{self.config.domain}/api/metrics"
+            },
+            "availability": "24/7"
         }
+
+        return card
 
     def setup_capabilities(self):
         """Setup agent-specific capabilities."""

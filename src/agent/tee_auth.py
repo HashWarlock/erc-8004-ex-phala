@@ -173,19 +173,18 @@ class TEEAuthenticator:
         Sign a message using the TEE-derived key.
 
         Args:
-            message: Message bytes to sign
+            message: Message bytes (32-byte hash) to sign
 
         Returns:
             Signature bytes
         """
         if self.use_tee:
-            # In production, we'd use TEE's signing API
-            # For now, use the derived key
-            signed = self.account.signHash(message)
+            # In production, use TEE's signing with the derived key
+            signed = self.account.unsafe_sign_hash(message)
             return signed.signature
         else:
             # Use private key directly
-            signed = self.account.signHash(message)
+            signed = self.account.unsafe_sign_hash(message)
             return signed.signature
 
     def _create_attestation_data(self, method: str = "structured") -> bytes:

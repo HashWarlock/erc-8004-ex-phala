@@ -190,7 +190,7 @@ class RegistryClient:
 
         # Sign and send transaction
         signed_tx = self.account.sign_transaction(tx)
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
         # Wait for receipt
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
@@ -241,7 +241,7 @@ class RegistryClient:
 
         # Sign and send
         signed_tx = self.account.sign_transaction(tx)
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
         return tx_hash.hex()
 
@@ -282,7 +282,7 @@ class RegistryClient:
 
         # Sign and send
         signed_tx = self.account.sign_transaction(tx)
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
         return tx_hash.hex()
 
@@ -323,7 +323,7 @@ class RegistryClient:
 
         # Sign and send
         signed_tx = self.account.sign_transaction(tx)
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
         return tx_hash.hex()
 

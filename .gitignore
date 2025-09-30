@@ -98,3 +98,5 @@ agent_state/
 
 # Deployment reports
 deployment/reports/
+**/*github**
+**/*GITHUB**

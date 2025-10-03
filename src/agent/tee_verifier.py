@@ -1,5 +1,6 @@
 """TEE Verification and Registration"""
 
+import httpx
 from typing import Dict, Any
 from web3 import Web3
 from eth_account import Account
@@ -51,36 +52,35 @@ class TEEVerifier:
         self,
         agent_id: int,
         agent_address: str,
+        tdx_quote: str,
+        app_id: str,
+        dstack_domain: str,
+        event_log: object,
         mock_mode: bool = True
     ) -> Dict[str, Any]:
         """Register TEE key - uses mock proof with actual agent address."""
 
-        tee_arch = Web3.to_bytes(text="TDX_DSTACK").ljust(32, b'\x00')
-        code_measurement = bytes.fromhex("d641ca7589adba8fcd079f923ebccee92195cb998cfdf8dcc500585bfdb06df6")
-        pubkey = Web3.to_checksum_address(agent_address)
-        code_config_uri = "ipfs://mock-config"
-
-        # Generate proof with actual agent signature
-        import eth_abi
-
-        inner_data = eth_abi.encode(
-            ['bytes32', 'address', 'string'],
-            [code_measurement, pubkey, code_config_uri]
-        )
-
-        # Sign with agent's key
-        message = encode_defunct(primitive=inner_data)
-        signed = self.account.sign_message(message)
-        signature = signed.signature
-
-        proof = eth_abi.encode(
-            ['bytes', 'bytes'],
-            [inner_data, signature]
-        )
-
         # Check if already registered
+        pubkey = Web3.to_checksum_address(agent_address)
         if await self.check_tee_registered(agent_id, pubkey):
             return {"success": True, "agent_id": agent_id, "pubkey": pubkey, "already_registered": True}
+
+        payload = {
+            'agentId': agent_id,
+            'agentPubkey': agent_address,
+            'tdxQuote': tdx_quote,
+            'appId': app_id,
+            'dstackDomain': dstack_domain,
+        }
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post('https://194622febfc33d67e4a98f365dbc2fe9d0d53933-3000.dstack-pha-prod9.phala.network/getOffchainProof', json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+
+        tee_arch = Web3.to_bytes(text="TDX_DSTACK").ljust(32, b'\x00')
+        code_measurement = data['codeMeasurement']
+        code_config_uri = data['codeConfigUri']
+        proof = data['proof']
 
         tx = self.registry_contract.functions.addKey(
             agent_id,
@@ -112,5 +112,5 @@ class TEEVerifier:
             "tx_hash": tx_hash.hex(),
             "agent_id": agent_id,
             "pubkey": pubkey,
-            "code_measurement": "0x" + code_measurement.hex()
+            "code_measurement": code_measurement
         }

@@ -394,18 +394,32 @@ async def register_agent():
 @app.post("/api/tee/register")
 async def register_tee():
     """Register TEE with mock proof."""
+    global agent, tee_auth, tee_verifier
+
     if not agent or not tee_auth or not tee_verifier:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
     if not agent.is_registered or not agent.agent_id:
         raise HTTPException(status_code=400, detail="Agent must be registered first")
 
+    attestation = await tee_auth.get_attestation()
+    agent_address = await agent._get_agent_address()
+
+    agent_domain = os.getenv('AGENT_DOMAIN', '')
+    app_id = agent_domain[:agent_domain.find('-')] # maybe better way
+    dstack_domain = agent_domain[agent_domain.find('.')+1:]
+    tdx_quote = attestation['quote']
+    event_log = attestation['event_log']
+
     try:
-        agent_address = await agent._get_agent_address()
 
         result = await tee_verifier.register_tee_key(
             agent_id=agent.agent_id,
-            agent_address=agent_address
+            agent_address=agent_address,
+            tdx_quote=tdx_quote,
+            app_id=app_id,
+            dstack_domain=dstack_domain,
+            event_log=event_log,
         )
 
         if result.get("already_registered"):

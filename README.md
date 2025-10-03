@@ -12,16 +12,24 @@ Trustless AI agents with Intel TDX hardware security on Base Sepolia.
 
 ## Quick Start
 
+### Using Docker (Recommended)
+
 ```bash
-# Install
+git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
+cd erc-8004-ex-phala
+cp .env.example .env
+# Edit .env with your config
+docker compose up -d
+```
+
+### Manual Setup
+
+```bash
 git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
 cd erc-8004-ex-phala
 pip install -e .
-
-# Configure
 cp .env.example .env
-
-# Run
+# Edit .env with your config
 python deployment/local_agent_server.py
 ```
 

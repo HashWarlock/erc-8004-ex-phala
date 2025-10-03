@@ -81,9 +81,10 @@ class TEEAuthenticator:
         """Derive private key using TEE's secure key derivation."""
         # Create unique path for deterministic key derivation
         # Format: category/subcategory for wallet keys
-        path = f"wallet/erc8004-{self.domain}"
-        # Purpose acts as additional entropy/context
-        purpose = self.salt
+        # Include salt in path for truly unique keys
+        path = f"wallet/erc8004-{self.salt}"
+        # Purpose uses domain for context
+        purpose = self.domain
 
         print(f"🔑 Deriving key for agent with path: {path[:30]}...")
 

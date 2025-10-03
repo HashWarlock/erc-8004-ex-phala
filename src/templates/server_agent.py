@@ -17,14 +17,15 @@ class ServerAgent(BaseAgent):
 
     async def process_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute task via AIO Sandbox."""
-        task_type = task_data.get('type', 'shell')
+        data = task_data.get('data', {})
+        task_type = data.get('type', 'shell')
 
         if task_type == 'shell':
-            return await self._execute_shell(task_data.get('command', 'echo "No command"'))
+            return await self._execute_shell(data.get('command', 'echo "No command"'))
         elif task_type == 'file_read':
-            return await self._read_file(task_data.get('path'))
+            return await self._read_file(data.get('path'))
         elif task_type == 'file_write':
-            return await self._write_file(task_data.get('path'), task_data.get('content'))
+            return await self._write_file(data.get('path'), data.get('content'))
         else:
             return {"error": "Unknown task type", "type": task_type}
 

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  agent:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - AGENT_DOMAIN=${AGENT_DOMAIN}
+      - AGENT_SALT=${AGENT_SALT}
+      - SANDBOX_URL=${SANDBOX_URL}
+      - RPC_URL=${RPC_URL:-https://sepolia.base.org}
+      - CHAIN_ID=${CHAIN_ID:-84532}
+      - IDENTITY_REGISTRY_ADDRESS=${IDENTITY_REGISTRY_ADDRESS}
+      - TEE_VERIFIER_ADDRESS=${TEE_VERIFIER_ADDRESS}
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+    restart: unless-stopped

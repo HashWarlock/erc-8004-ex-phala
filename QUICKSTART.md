@@ -2,24 +2,24 @@
 
 Launch your TEE agent in 3 minutes.
 
-## 1. Clone & Install
+## Option 1: Docker (Recommended)
+
+```bash
+git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
+cd erc-8004-ex-phala
+cp .env.example .env
+# Edit .env with your settings
+docker-compose up -d
+```
+
+## Option 2: Manual Setup
 
 ```bash
 git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
 cd erc-8004-ex-phala
 pip install -e .
-```
-
-## 2. Configure
-
-```bash
 cp .env.example .env
 # Edit .env with your settings
-```
-
-## 3. Run
-
-```bash
 python deployment/local_agent_server.py
 ```
 

@@ -302,7 +302,7 @@ def create_tee_agent_card(
 
     # Set infrastructure
     builder.set_infrastructure(
-        hosting="Phala Network",
+        hosting="Phala Cloud",
         tee_enabled=True,
         attestation_provider="dstack",
         additional_info={

@@ -9,6 +9,9 @@ Demonstrates TEE-derived key signing without requiring on-chain registration.
 import sys
 import os
 import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
 from datetime import datetime
 from typing import Dict, Any, Optional
 

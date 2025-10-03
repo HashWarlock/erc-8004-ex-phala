@@ -1,58 +1,121 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.0;
 
 import "./ITEERegistry.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-contract TEERegistry is ITEERegistry {
-    mapping(uint256 => TEEKey) public teeKeys;
-    mapping(address => bool) public whitelistedVerifiers;
-    uint256 public nextKeyId = 1;
+contract TEERegistry is ITEERegistry, Ownable {
+    using EnumerableSet for EnumerableSet.AddressSet;
 
-    address public owner;
+    address public identityRegistry;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
-        _;
+    mapping(address => Verifier) private _verifiers;
+    mapping(uint256 => EnumerableSet.AddressSet) private _agentKeys;
+    mapping(address => Key) private _keys;
+
+    constructor(address _identityRegistry) Ownable(msg.sender) {
+        identityRegistry = _identityRegistry;
     }
 
-    constructor() {
-        owner = msg.sender;
+    function verifiers(address verifier) external view returns (Verifier memory) {
+        return _verifiers[verifier];
     }
 
-    function whitelistVerifier(address verifier, bool status) external onlyOwner {
-        whitelistedVerifiers[verifier] = status;
+    function keys(uint256 agentId, address pubkey) external view returns (Key memory) {
+        return _keys[pubkey];
     }
 
-    function registerTEEKey(
-        uint256 agentId,
-        string calldata teeArch,
-        bytes32 codeMeasurement,
-        bytes calldata pubkey,
-        bytes calldata proof
-    ) external override returns (uint256) {
-        require(whitelistedVerifiers[msg.sender], "Verifier not whitelisted");
+    function addVerifier(address verifier, bytes32 teeArch) external onlyOwner {
+        require(verifier != address(0), "Invalid verifier address");
 
-        uint256 keyId = nextKeyId++;
-
-        teeKeys[keyId] = TEEKey({
-            agentId: agentId,
-            teeArch: teeArch,
-            codeMeasurement: codeMeasurement,
-            pubkey: pubkey,
-            verifier: msg.sender,
-            timestamp: block.timestamp
+        _verifiers[verifier] = Verifier({
+            teeArch: teeArch
         });
 
-        emit TEEKeyRegistered(keyId, agentId, teeArch, codeMeasurement);
-
-        return keyId;
+        emit VerifierAdded(verifier, teeArch);
     }
 
-    function verifyTEEKey(uint256 keyId) external view override returns (bool) {
-        return teeKeys[keyId].timestamp > 0;
+    function removeVerifier(address verifier) external onlyOwner {
+        require(verifier != address(0), "Invalid verifier address");
+
+        delete _verifiers[verifier];
+
+        emit VerifierRemoved(verifier);
     }
 
-    function getTEEKey(uint256 keyId) external view override returns (TEEKey memory) {
-        return teeKeys[keyId];
+    function addKey(
+        uint256 agentId,
+        bytes32 teeArch,
+        bytes32 codeMeasurement,
+        address pubkey,
+        string calldata codeConfigUri,
+        address verifier,
+        bytes calldata proof
+    ) external {
+        // TODO: Verify caller is owner/operator of agentId via identityRegistry
+
+        // TODO: Verify that verifier is whitelisted
+        require(_verifiers[verifier].teeArch != bytes32(0), "Verifier not whitelisted");
+
+        // Verify key doesn't already exist
+        require(_keys[pubkey].verifier == address(0), "Key already exists");
+
+        // TODO: Call verifier to validate proof
+        // The verifier should validate:
+        // - The TEE attestation is valid
+        // - The codeMeasurement matches the public input in the proof
+        // - The pubkey matches the public input in the proof
+
+        _keys[pubkey] = Key({
+            teeArch: teeArch,
+            codeMeasurement: codeMeasurement,
+            pubkey: abi.encodePacked(pubkey),
+            codeConfigUri: codeConfigUri,
+            verifier: verifier
+        });
+
+        _agentKeys[agentId].add(pubkey);
+
+        emit KeyAdded(agentId, teeArch, codeMeasurement, pubkey, codeConfigUri, verifier);
+    }
+
+    function removeKey(
+        uint256 agentId,
+        address pubkey
+    ) external {
+        // TODO: Verify caller is owner/operator of agentId via identityRegistry
+
+        require(_agentKeys[agentId].contains(pubkey), "Key not found");
+
+        _agentKeys[agentId].remove(pubkey);
+        delete _keys[pubkey];
+
+        emit KeyRemoved(agentId, pubkey);
+    }
+
+    function getKey(uint256 agentId, address pubkey) external view returns (Key memory) {
+        require(_agentKeys[agentId].contains(pubkey), "Key not found");
+        return _keys[pubkey];
+    }
+
+    function hasKey(uint256 agentId, address pubkey) external view returns (bool) {
+        return _agentKeys[agentId].contains(pubkey);
+    }
+
+    function getKeyCount(uint256 agentId) external view returns (uint256) {
+        return _agentKeys[agentId].length();
+    }
+
+    function getKeyAtIndex(uint256 agentId, uint256 index) external view returns (address) {
+        return _agentKeys[agentId].at(index);
+    }
+
+    function isVerifier(address verifier) external view returns (bool) {
+        return _verifiers[verifier].teeArch != bytes32(0);
+    }
+
+    function getIdentityRegistry() external view returns (address) {
+        return identityRegistry;
     }
 }

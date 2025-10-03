@@ -126,9 +126,9 @@ async def startup_event():
     tee_registry_addr = os.getenv("TEE_REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000")
     tee_verifier = TEEVerifier(
         w3=agent._registry_client.w3,
-        verifier_address=tee_verifier_addr,
         tee_registry_address=tee_registry_addr,
-        account=tee_auth.account
+        account=tee_auth.account,
+        verifier_address=tee_verifier_addr
     )
 
     # Generate agent card
@@ -382,7 +382,8 @@ async def register_tee():
             agent_id=agent.agent_id,
             tee_arch="tdx",
             pubkey=pubkey,
-            attestation=attestation_bytes
+            attestation=attestation_bytes,
+            code_config_uri=""
         )
 
         return {

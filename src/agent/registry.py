@@ -61,12 +61,12 @@ class RegistryClient:
             {
                 "inputs": [
                     {"name": "agentDomain", "type": "string"},
-                    {"name": "agentAddress", "type": "address"},
-                    {"name": "agentCard", "type": "string"}
+                    {"name": "agentAddress", "type": "address"}
                 ],
-                "name": "registerAgent",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "type": "function"
+                "name": "newAgent",
+                "outputs": [{"name": "agentId", "type": "uint256"}],
+                "type": "function",
+                "stateMutability": "nonpayable"
             },
             {
                 "inputs": [{"name": "agentId", "type": "uint256"}],
@@ -157,15 +157,18 @@ class RegistryClient:
         self,
         domain: str,
         agent_address: str,
-        agent_card: Dict[str, Any]
+        agent_card: Dict[str, Any] = None
     ) -> int:
         """
-        Register a new agent in the Identity Registry.
+        Register a new agent in the Identity Registry using newAgent().
+
+        Note: The reference implementation uses newAgent(domain, address)
+        without the agent card parameter. Agent card is stored off-chain.
 
         Args:
             domain: Agent's domain
             agent_address: Agent's Ethereum address
-            agent_card: Agent card with capabilities
+            agent_card: Agent card (unused in reference implementation)
 
         Returns:
             Agent ID assigned by the registry
@@ -173,17 +176,14 @@ class RegistryClient:
         if not self.account:
             raise ValueError("Account required for registration")
 
-        # Convert agent card to JSON string
-        agent_card_json = json.dumps(agent_card)
-
-        # Build transaction
-        tx = self.identity_contract.functions.registerAgent(
+        # Use newAgent function (reference implementation)
+        # Note: msg.sender must equal agentAddress
+        tx = self.identity_contract.functions.newAgent(
             domain,
-            Web3.to_checksum_address(agent_address),
-            agent_card_json
+            Web3.to_checksum_address(agent_address)
         ).build_transaction({
             'chainId': self.chain_id,
-            'gas': 500000,
+            'gas': 300000,  # Increased gas limit (network estimates ~245k)
             'gasPrice': self.w3.eth.gas_price,
             'nonce': self.w3.eth.get_transaction_count(self.account.address)
         })
@@ -192,17 +192,24 @@ class RegistryClient:
         signed_tx = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
+        print(f"📤 Transaction sent: {tx_hash.hex()}")
+
         # Wait for receipt
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
         if receipt.status != 1:
             raise RuntimeError(f"Registration failed: {receipt}")
 
-        # Extract agent ID from events (simplified)
-        # In production, parse the AgentRegistered event
-        agent_id = self.identity_contract.functions.getAgentByDomain(domain).call()
+        # Get agent ID from logs or return value
+        # The function returns the agent ID
+        agent_id = receipt['logs'][0]['topics'][1].hex() if receipt['logs'] else None
 
-        return agent_id
+        if not agent_id:
+            # Fallback: query by domain
+            from web3 import Web3 as W3
+            agent_id = self.identity_contract.functions.getAgentIdByDomain(domain).call()
+
+        return int(agent_id, 16) if isinstance(agent_id, str) else agent_id
 
     async def submit_feedback(
         self,

@@ -137,11 +137,13 @@ async def root():
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
+    agent_address = await agent._get_agent_address()
+
     return {
         "name": "ERC-8004 TEE Agent Server",
         "status": "operational",
         "domain": agent.config.domain,
-        "address": agent.agent_address,
+        "address": agent_address,
         "endpoints": {
             "status": "/api/status",
             "sign": "/api/sign",
@@ -204,12 +206,12 @@ async def sign_message(request: SignRequest):
             "message_hash": "0x" + message_hash.hex(),
             "signature": "0x" + signature.hex(),
             "eip191_signature": signed_message.signature.hex(),
-            "signer_address": agent.agent_address,
+            "signer_address": await agent._get_agent_address(),
             "domain": agent.config.domain,
             "timestamp": datetime.utcnow().isoformat(),
             "verification": {
                 "note": "Use eth_account.Account.recover_message() to verify EIP-191 signature",
-                "expected_address": agent.agent_address
+                "expected_address": await agent._get_agent_address()
             }
         }
 

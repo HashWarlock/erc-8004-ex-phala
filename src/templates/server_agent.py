@@ -1,310 +1,92 @@
-"""
-Server Agent Template
+"""Server Agent - AIO Sandbox Integration"""
 
-Market analysis and data processing agent implementation.
-"""
-
+import os
+import httpx
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from ..agent.base import BaseAgent, AgentConfig, RegistryAddresses
 
 
 class ServerAgent(BaseAgent):
-    """
-    Server agent for processing analysis tasks.
+    """Server agent with AIO Sandbox integration."""
 
-    Provides market analysis, data processing, and computation services
-    to other agents in the network.
-    """
-
-    def __init__(self, config: AgentConfig, registries: RegistryAddresses):
-        """
-        Initialize server agent.
-
-        Args:
-            config: Agent configuration
-            registries: Registry addresses
-        """
+    def __init__(self, config: AgentConfig, registries: RegistryAddresses, sandbox_url: str = None):
         super().__init__(config, registries)
-        self.setup_capabilities()
+        self.sandbox_url = sandbox_url or os.getenv("SANDBOX_URL", "http://localhost:8080")
+        print(f"📦 Sandbox: {self.sandbox_url}")
 
     async def process_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Process incoming analysis task.
+        """Execute task via AIO Sandbox."""
+        task_type = task_data.get('type', 'shell')
 
-        Args:
-            task_data: Task data containing:
-                - task_id: Unique task identifier
-                - query: Analysis query or request
-                - data: Optional data to analyze
-                - parameters: Optional processing parameters
+        if task_type == 'shell':
+            return await self._execute_shell(task_data.get('command', 'echo "No command"'))
+        elif task_type == 'file_read':
+            return await self._read_file(task_data.get('path'))
+        elif task_type == 'file_write':
+            return await self._write_file(task_data.get('path'), task_data.get('content'))
+        else:
+            return {"error": "Unknown task type", "type": task_type}
 
-        Returns:
-            Processing result with analysis
-        """
-        print(f"🔍 Processing task: {task_data.get('task_id', 'unknown')}")
+    async def _execute_shell(self, command: str) -> Dict[str, Any]:
+        """Execute shell command via sandbox."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    f"{self.sandbox_url}/v1/shell/exec",
+                    json={"command": command},
+                    timeout=30.0
+                )
+                return resp.json()
+            except Exception as e:
+                return {"error": str(e)}
 
-        # Extract task information
-        task_id = task_data.get('task_id', 'unknown')
-        query = task_data.get('query', '')
-        data = task_data.get('data', {})
-        parameters = task_data.get('parameters', {})
+    async def _read_file(self, path: str) -> Dict[str, Any]:
+        """Read file via sandbox."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    f"{self.sandbox_url}/v1/file/read",
+                    json={"file": path},
+                    timeout=10.0
+                )
+                return resp.json()
+            except Exception as e:
+                return {"error": str(e)}
 
-        # Build result structure
-        result = {
-            'task_id': task_id,
-            'agent_id': self.agent_id,
-            'status': 'completed',
-            'timestamp': datetime.utcnow().isoformat(),
-            'query': query
-        }
-
-        try:
-            # Perform analysis based on query type
-            if 'market' in query.lower():
-                analysis = await self._analyze_market_data(data, parameters)
-                result['analysis'] = analysis
-                result['confidence'] = 0.85
-            elif 'trend' in query.lower():
-                analysis = await self._analyze_trends(data, parameters)
-                result['analysis'] = analysis
-                result['confidence'] = 0.90
-            elif 'risk' in query.lower():
-                analysis = await self._analyze_risk(data, parameters)
-                result['analysis'] = analysis
-                result['confidence'] = 0.75
-            else:
-                # Generic analysis
-                analysis = await self._generic_analysis(query, data, parameters)
-                result['analysis'] = analysis
-                result['confidence'] = 0.80
-
-            # Check if AI plugin is available for enhanced analysis
-            ai_plugin = self.get_plugin('ai_analyzer')
-            if ai_plugin:
-                enhanced = await ai_plugin.enhance_analysis(result['analysis'])
-                result['enhanced_analysis'] = enhanced
-                result['confidence'] = min(1.0, result['confidence'] + 0.1)
-
-        except Exception as e:
-            result['status'] = 'error'
-            result['error'] = str(e)
-            print(f"❌ Error processing task: {e}")
-
-        return result
+    async def _write_file(self, path: str, content: str) -> Dict[str, Any]:
+        """Write file via sandbox."""
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    f"{self.sandbox_url}/v1/file/write",
+                    json={"file": path, "content": content},
+                    timeout=10.0
+                )
+                return resp.json()
+            except Exception as e:
+                return {"error": str(e)}
 
     async def _create_agent_card(self) -> Dict[str, Any]:
-        """
-        Create ERC-8004 compliant agent card describing capabilities.
-
-        Returns:
-            Agent card with server capabilities
-        """
+        """Create ERC-8004 agent card."""
         from ..agent.agent_card import create_tee_agent_card
 
-        # Get agent address
         agent_address = await self._get_agent_address()
 
-        # Define capabilities
         capabilities = [
-            ("market-analysis", "Analyze market trends and conditions using TEE-secured computations"),
-            ("trend-analysis", "Identify and analyze trends in time-series data"),
-            ("risk-assessment", "Evaluate risk factors and provide risk scores"),
-            ("data-processing", "Process and transform data with cryptographic guarantees"),
-            ("computation-services", "General-purpose secure computation services")
+            ("shell-execution", "Execute shell commands via AIO Sandbox"),
+            ("file-operations", "Read/write files in sandbox"),
+            ("browser-control", "Control browser via CDP"),
+            ("jupyter-execution", "Run Python/Node.js code")
         ]
 
-        # Create ERC-8004 compliant agent card
-        card = create_tee_agent_card(
+        return create_tee_agent_card(
             name=f"TEE Server Agent - {self.config.domain}",
-            description="Advanced TEE-secured server agent providing market analysis, trend detection, risk assessment, and secure computation services with cryptographic attestation",
+            description="TEE-secured agent with AIO Sandbox integration for secure code execution",
             domain=self.config.domain,
             agent_address=agent_address,
             agent_id=self.agent_id if self.is_registered else None,
-            signature=None,  # Will be added after registration
+            signature=None,
             capabilities=capabilities,
             chain_id=self.config.chain_id
         )
-
-        # Add server-specific metadata
-        card["metadata"] = {
-            "role": "server",
-            "pricing": {
-                "baseFeemWei": "1000000000000000",  # 0.001 ETH
-                "currency": "ETH",
-                "unit": "per-request"
-            },
-            "performance": {
-                "averageResponseTime": "1.2s",
-                "maxThroughput": "100 requests/minute",
-                "uptime": "99.9%"
-            },
-            "endpoints": {
-                "process": f"https://{self.config.domain}/api/process",
-                "status": f"https://{self.config.domain}/api/status",
-                "metrics": f"https://{self.config.domain}/api/metrics"
-            },
-            "availability": "24/7"
-        }
-
-        return card
-
-    def setup_capabilities(self):
-        """Setup agent-specific capabilities."""
-        # Add any initialization logic here
-        print("📊 Server agent capabilities initialized")
-
-    # Analysis Methods
-    async def _analyze_market_data(
-        self,
-        data: Dict[str, Any],
-        parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Analyze market data.
-
-        Args:
-            data: Market data to analyze
-            parameters: Analysis parameters
-
-        Returns:
-            Market analysis results
-        """
-        # Implement market analysis logic
-        return {
-            'type': 'market_analysis',
-            'summary': 'Market conditions analyzed',
-            'trends': ['bullish', 'stable'],
-            'volatility': 'medium',
-            'recommendations': [
-                'Monitor key indicators',
-                'Consider risk hedging'
-            ],
-            'data_points_analyzed': len(data)
-        }
-
-    async def _analyze_trends(
-        self,
-        data: Dict[str, Any],
-        parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Analyze trends in data.
-
-        Args:
-            data: Data to analyze
-            parameters: Analysis parameters
-
-        Returns:
-            Trend analysis results
-        """
-        return {
-            'type': 'trend_analysis',
-            'summary': 'Trend patterns identified',
-            'direction': 'upward',
-            'strength': 0.7,
-            'time_horizon': parameters.get('horizon', '7d'),
-            'key_patterns': [
-                'Consistent growth',
-                'Seasonal variation detected'
-            ]
-        }
-
-    async def _analyze_risk(
-        self,
-        data: Dict[str, Any],
-        parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Perform risk assessment.
-
-        Args:
-            data: Data to assess
-            parameters: Assessment parameters
-
-        Returns:
-            Risk analysis results
-        """
-        return {
-            'type': 'risk_assessment',
-            'summary': 'Risk factors evaluated',
-            'risk_level': 'medium',
-            'risk_score': 0.45,
-            'factors': [
-                {'name': 'market_volatility', 'impact': 'high'},
-                {'name': 'liquidity', 'impact': 'low'}
-            ],
-            'mitigation_strategies': [
-                'Diversify exposure',
-                'Set stop-loss limits'
-            ]
-        }
-
-    async def _generic_analysis(
-        self,
-        query: str,
-        data: Dict[str, Any],
-        parameters: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Perform generic analysis.
-
-        Args:
-            query: Analysis query
-            data: Data to analyze
-            parameters: Analysis parameters
-
-        Returns:
-            Generic analysis results
-        """
-        return {
-            'type': 'generic_analysis',
-            'summary': f'Analysis completed for query: {query[:50]}',
-            'data_processed': True,
-            'metrics': {
-                'data_points': len(data),
-                'processing_time': '0.5s',
-                'accuracy_estimate': 0.8
-            }
-        }
-
-    # Server-specific methods
-    async def get_metrics(self) -> Dict[str, Any]:
-        """
-        Get server performance metrics.
-
-        Returns:
-            Performance metrics
-        """
-        return {
-            'uptime': '99.9%',
-            'tasks_processed': 1234,
-            'average_response_time': '1.2s',
-            'success_rate': 0.98,
-            'last_updated': datetime.utcnow().isoformat()
-        }
-
-    async def handle_computation_request(
-        self,
-        computation_type: str,
-        input_data: Any
-    ) -> Any:
-        """
-        Handle computation request.
-
-        Args:
-            computation_type: Type of computation
-            input_data: Input for computation
-
-        Returns:
-            Computation result
-        """
-        # Implement computation logic
-        print(f"💻 Processing computation: {computation_type}")
-
-        # Placeholder for computation
-        return {
-            'computation_type': computation_type,
-            'result': 'computed',
-            'timestamp': datetime.utcnow().isoformat()
-        }

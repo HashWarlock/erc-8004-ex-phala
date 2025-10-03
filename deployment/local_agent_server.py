@@ -431,33 +431,49 @@ async def agent_card():
     return await agent._create_agent_card()
 
 
-@app.post("/a2a/message")
-async def a2a_message(request: Dict[str, Any]):
-    """A2A protocol: Handle message."""
+tasks = {}
+
+@app.post("/tasks")
+async def create_task(request: Dict[str, Any]):
+    """A2A: Create task."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
-    return {
-        "from": await agent._get_agent_address(),
-        "to": request.get("from"),
-        "content": f"Echo: {request.get('content')}",
-        "timestamp": datetime.utcnow().isoformat()
+    task_id = request.get("taskId") or str(__import__('uuid').uuid4())
+    context_id = request.get("contextId") or task_id
+
+    tasks[task_id] = {
+        "taskId": task_id,
+        "contextId": context_id,
+        "status": "pending",
+        "artifacts": []
     }
 
+    # Execute async
+    asyncio.create_task(execute_task(task_id, request))
 
-@app.post("/a2a/task")
-async def a2a_task(request: Dict[str, Any]):
-    """A2A protocol: Handle task."""
-    if not agent:
-        raise HTTPException(status_code=503, detail="Agent not initialized")
+    return {"taskId": task_id, "status": "pending"}
 
-    result = await agent.process_task(request)
-    return {
-        "task_id": request.get("task_id"),
-        "status": "completed",
-        "result": result,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+@app.get("/tasks/{task_id}")
+async def get_task(task_id: str):
+    """A2A: Get task status."""
+    if task_id not in tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks[task_id]
+
+async def execute_task(task_id: str, request: Dict[str, Any]):
+    tasks[task_id]["status"] = "running"
+    try:
+        result = await agent.process_task(request)
+        tasks[task_id].update({
+            "status": "completed",
+            "artifacts": [{"type": "result", "data": result}]
+        })
+    except Exception as e:
+        tasks[task_id].update({
+            "status": "failed",
+            "error": str(e)
+        })
 
 
 @app.get("/health")

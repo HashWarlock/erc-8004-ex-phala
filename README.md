@@ -1,14 +1,15 @@
 # ERC-8004 TEE Agent
 
-Trustless AI agents with Intel TDX hardware security on Base Sepolia.
+Trustless agents with Intel TDX on Base Sepolia. 0.0001 ETH registration fee.
 
 ## Features
 
-- 🔐 TEE-derived keys (Intel TDX)
-- 🌐 ERC-8004 compliant
-- 📜 Remote attestation
-- 🔗 On-chain registration
-- 🤖 A2A protocol support
+- 🔐 TEE-derived keys (Intel TDX via Phala dstack)
+- 🌐 ERC-8004 compliant agent cards
+- 📜 TEE attestation (mock signatures for testing)
+- 🔗 On-chain registration (0.0001 ETH)
+- 🤖 A2A protocol (POST /tasks, GET /tasks/{id})
+- 🏖️ AIO Sandbox integration
 
 ## Quick Start
 
@@ -41,18 +42,20 @@ Open http://localhost:8000
 
 ```
 erc-8004-ex-phala/
-├── contracts/              # Reference Solidity contracts
-│   ├── TEERegistry.sol
-│   └── ITEERegistry.sol
-├── src/agent/             # Core agent logic
-│   ├── base.py
-│   ├── tee_auth.py
-│   └── tee_verifier.py
-├── deployment/            # Server entry point
+├── contracts/             # Solidity contracts
+│   ├── IdentityRegistry.sol (deployed: 0x8506e13d47faa2DC8c5a0dD49182e74A6131a0e3)
+│   └── TEERegistry.sol
+├── src/agent/            # Core agent logic
+│   ├── tee_auth.py      # TEE key derivation
+│   ├── tee_verifier.py  # TEE registration
+│   └── registry.py      # On-chain registry client
+├── src/templates/        # Agent templates
+│   └── server_agent.py  # AIO Sandbox agent
+├── deployment/           # Server
 │   └── local_agent_server.py
-└── static/                # Web UI
-    ├── funding.html
-    └── dashboard.html
+└── static/              # Web UI
+    ├── dashboard.html   # Registration flow
+    └── funding.html     # QR code funding
 ```
 
 ## Architecture
@@ -79,21 +82,20 @@ erc-8004-ex-phala/
 
 - `GET /` - Funding page
 - `GET /dashboard` - Registration flow
+- `GET /api/status` - Agent status (checks on-chain)
 - `GET /api/wallet` - Wallet address & balance
-- `POST /api/register` - Register agent on-chain
-- `POST /api/tee/register` - Submit TEE attestation
-- `GET /a2a/card` - Agent card (ERC-8004)
-- `POST /a2a/message` - A2A messaging
-- `POST /a2a/task` - Task execution
+- `POST /api/register` - Register agent (0.0001 ETH)
+- `POST /api/tee/register` - Register TEE key
+- `GET /.well-known/agent-card.json` - ERC-8004 agent card
+- `POST /tasks` - Create A2A task
+- `GET /tasks/{id}` - Query task status
 
-## Deploy Contracts
+## Deployed Contracts
 
-```bash
-export PRIVATE_KEY=0x...
-./scripts/deploy_contracts.sh
-```
-
-Updates `deployed_addresses.json`
+**Base Sepolia:**
+- IdentityRegistry: `0x8506e13d47faa2DC8c5a0dD49182e74A6131a0e3` (0.0001 ETH fee)
+- TEERegistry: `0x03eCA4d903Adc96440328C2E3a18B71EB0AFa60D`
+- Verifier: `0x481ce1a6EEC3016d1E61725B1527D73Df1c393a5`
 
 ## Configuration
 
@@ -102,7 +104,8 @@ See `.env.example`:
 ```bash
 AGENT_DOMAIN=localhost:8000
 AGENT_SALT=unique-salt
-IDENTITY_REGISTRY_ADDRESS=0x19fad4adD9f8C4A129A078464B22E1506275FbDd
+IDENTITY_REGISTRY_ADDRESS=0x8506e13d47faa2DC8c5a0dD49182e74A6131a0e3
+TEE_REGISTRY_ADDRESS=0x03eCA4d903Adc96440328C2E3a18B71EB0AFa60D
 ```
 
 ## Documentation
@@ -116,7 +119,7 @@ IDENTITY_REGISTRY_ADDRESS=0x19fad4adD9f8C4A129A078464B22E1506275FbDd
 ## How It Works
 
 1. **Generate Wallet** - TEE derives keys from domain+salt
-2. **Fund** - Add 0.001 ETH to agent address
+2. **Fund** - Add 0.0001 ETH to agent address
 3. **Register** - Call Identity Registry `newAgent()`
 4. **Verify TEE** - Submit attestation to TEE Registry
 5. **Go Live** - A2A endpoints ready

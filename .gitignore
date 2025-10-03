@@ -100,3 +100,6 @@ agent_state/
 deployment/reports/
 **/*github**
 **/*GITHUB**
+
+# dstack api spec
+dstack-api-spec.json

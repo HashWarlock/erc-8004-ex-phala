@@ -16,7 +16,8 @@ from typing import Dict, Any, Optional
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from eth_account.messages import encode_defunct
 from eth_utils import keccak
@@ -25,6 +26,7 @@ import uvicorn
 from src.agent.base import AgentConfig, RegistryAddresses
 from src.templates.server_agent import ServerAgent
 from src.agent.tee_auth import TEEAuthenticator
+from src.agent.tee_verifier import TEEVerifier
 
 
 # Request/Response Models
@@ -46,15 +48,20 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Mount static files
+static_path = os.path.join(os.path.dirname(__file__), '..', 'static')
+app.mount("/static", StaticFiles(directory=static_path), name="static")
+
 # Global agent instance
 agent: Optional[ServerAgent] = None
 tee_auth: Optional[TEEAuthenticator] = None
+tee_verifier: Optional[TEEVerifier] = None
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize agent on startup."""
-    global agent, tee_auth
+    global agent, tee_auth, tee_verifier
 
     print("=" * 80)
     print("STARTING LOCAL AGENT SERVER")
@@ -115,6 +122,15 @@ async def startup_event():
     print("\n🤖 Initializing agent...")
     agent = ServerAgent(config, registries)
 
+    # Initialize TEE verifier
+    tee_registry_addr = os.getenv("TEE_REGISTRY_ADDRESS", "0x0000000000000000000000000000000000000000")
+    tee_verifier = TEEVerifier(
+        w3=agent._registry_client.w3,
+        verifier_address=tee_verifier_addr,
+        tee_registry_address=tee_registry_addr,
+        account=tee_auth.account
+    )
+
     # Generate agent card
     print("\n📋 Generating agent card...")
     agent_card = await agent._create_agent_card()
@@ -133,24 +149,42 @@ async def startup_event():
 
 @app.get("/")
 async def root():
-    """Root endpoint with server info."""
-    if not agent:
+    """Root endpoint - redirect to funding page."""
+    return FileResponse(os.path.join(static_path, 'funding.html'))
+
+
+@app.get("/funding")
+async def funding_page():
+    """Funding page."""
+    return FileResponse(os.path.join(static_path, 'funding.html'))
+
+
+@app.get("/dashboard")
+async def dashboard_page():
+    """Dashboard page."""
+    return FileResponse(os.path.join(static_path, 'dashboard.html'))
+
+
+@app.get("/api/wallet")
+async def get_wallet():
+    """Get wallet address and balance for funding."""
+    if not agent or not tee_auth:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
     agent_address = await agent._get_agent_address()
+    balance_wei = agent._registry_client.w3.eth.get_balance(agent_address)
+    balance_eth = agent._registry_client.w3.from_wei(balance_wei, 'ether')
+    min_balance = 0.001  # Minimum ETH for gas
 
     return {
-        "name": "ERC-8004 TEE Agent Server",
-        "status": "operational",
-        "domain": agent.config.domain,
         "address": agent_address,
-        "endpoints": {
-            "status": "/api/status",
-            "sign": "/api/sign",
-            "process": "/api/process",
-            "card": "/api/card",
-            "attestation": "/api/attestation"
-        }
+        "balance": str(balance_eth),
+        "balance_wei": str(balance_wei),
+        "qr_code_data": f"ethereum:{agent_address}?chainId={agent.config.chain_id}",
+        "chain_id": agent.config.chain_id,
+        "chain_name": "Base Sepolia",
+        "funded": float(balance_eth) >= min_balance,
+        "minimum_balance": str(min_balance)
     }
 
 
@@ -285,6 +319,79 @@ async def get_attestation():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get attestation: {str(e)}")
+
+
+@app.post("/api/register")
+async def register_agent():
+    """Register agent on-chain."""
+    if not agent or not tee_auth:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+
+    # Check balance
+    agent_address = await agent._get_agent_address()
+    balance_wei = agent._registry_client.w3.eth.get_balance(agent_address)
+    balance_eth = float(agent._registry_client.w3.from_wei(balance_wei, 'ether'))
+
+    if balance_eth < 0.001:
+        raise HTTPException(status_code=400, detail="Insufficient balance for registration")
+
+    try:
+        # Register agent
+        agent_id = await agent._registry_client.register_agent(
+            domain=agent.config.domain,
+            agent_address=agent_address
+        )
+
+        agent.agent_id = agent_id
+        agent.is_registered = True
+
+        # Get tx from logs (simplified)
+        tx_hash = "0x" + "0" * 64  # Placeholder
+
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "tx_hash": tx_hash,
+            "domain": agent.config.domain,
+            "address": agent_address,
+            "explorer_url": f"https://sepolia.basescan.org/tx/{tx_hash}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@app.post("/api/tee/register")
+async def register_tee():
+    """Register TEE attestation on-chain."""
+    if not agent or not tee_auth or not tee_verifier:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+
+    if not agent.is_registered or not agent.agent_id:
+        raise HTTPException(status_code=400, detail="Agent must be registered first")
+
+    try:
+        # Get attestation
+        attestation = await tee_auth.get_attestation()
+        attestation_bytes = attestation.get("quote", "").encode()
+
+        # Get pubkey
+        pubkey = bytes.fromhex(tee_auth.account.key.hex()[2:])
+
+        # Register TEE key
+        result = await tee_verifier.register_tee_key(
+            agent_id=agent.agent_id,
+            tee_arch="tdx",
+            pubkey=pubkey,
+            attestation=attestation_bytes
+        )
+
+        return {
+            "success": True,
+            **result,
+            "explorer_url": f"https://sepolia.basescan.org/tx/{result['tx_hash']}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TEE registration failed: {str(e)}")
 
 
 @app.get("/health")

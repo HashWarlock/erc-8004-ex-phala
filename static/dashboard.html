@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEE Agent Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <h1 class="text-4xl font-bold mb-8 text-center">TEE Agent Dashboard</h1>
+
+        <div class="grid gap-6">
+            <!-- Step 1: Wallet -->
+            <div id="step1" class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="step1-status" class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">1</div>
+                    <h2 class="text-2xl font-bold">Wallet Funding</h2>
+                </div>
+                <div id="step1-content" class="ml-12">
+                    <p class="text-gray-400">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Step 2: Registration -->
+            <div id="step2" class="bg-gray-800 rounded-lg p-6 opacity-50">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="step2-status" class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">2</div>
+                    <h2 class="text-2xl font-bold">Identity Registration</h2>
+                </div>
+                <div id="step2-content" class="ml-12">
+                    <p class="text-gray-400">Waiting for wallet funding...</p>
+                </div>
+            </div>
+
+            <!-- Step 3: TEE Verification -->
+            <div id="step3" class="bg-gray-800 rounded-lg p-6 opacity-50">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="step3-status" class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">3</div>
+                    <h2 class="text-2xl font-bold">TEE Verification</h2>
+                </div>
+                <div id="step3-content" class="ml-12">
+                    <p class="text-gray-400">Waiting for registration...</p>
+                </div>
+            </div>
+
+            <!-- Step 4: Agent Ready -->
+            <div id="step4" class="bg-gray-800 rounded-lg p-6 opacity-50">
+                <div class="flex items-center gap-4 mb-4">
+                    <div id="step4-status" class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">4</div>
+                    <h2 class="text-2xl font-bold">Agent Status</h2>
+                </div>
+                <div id="step4-content" class="ml-12">
+                    <p class="text-gray-400">Waiting for TEE verification...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            wallet: null,
+            registration: null,
+            tee: null
+        };
+
+        async function loadWallet() {
+            const res = await fetch('/api/wallet');
+            state.wallet = await res.json();
+
+            const step1 = document.getElementById('step1');
+            const content = document.getElementById('step1-content');
+            const status = document.getElementById('step1-status');
+
+            if (state.wallet.funded) {
+                step1.className = 'bg-gray-800 rounded-lg p-6';
+                status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+                status.innerHTML = '✓';
+                content.innerHTML = `
+                    <p class="text-green-400 mb-2">✓ Wallet Funded</p>
+                    <p class="text-sm text-gray-400">Address: ${state.wallet.address}</p>
+                    <p class="text-sm text-gray-400">Balance: ${parseFloat(state.wallet.balance).toFixed(4)} ETH</p>
+                `;
+                document.getElementById('step2').classList.remove('opacity-50');
+                checkRegistration();
+            } else {
+                content.innerHTML = `
+                    <p class="text-yellow-400 mb-2">Waiting for funds...</p>
+                    <p class="text-sm text-gray-400">Address: ${state.wallet.address}</p>
+                    <p class="text-sm text-gray-400">Balance: ${state.wallet.balance} ETH</p>
+                    <a href="/funding" class="text-blue-400 hover:text-blue-300 text-sm">→ Fund Wallet</a>
+                `;
+                setTimeout(loadWallet, 5000);
+            }
+        }
+
+        async function checkRegistration() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+
+            const step2 = document.getElementById('step2');
+            const content = document.getElementById('step2-content');
+            const status = document.getElementById('step2-status');
+
+            if (data.agent.is_registered) {
+                step2.className = 'bg-gray-800 rounded-lg p-6';
+                status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+                status.innerHTML = '✓';
+                content.innerHTML = `
+                    <p class="text-green-400 mb-2">✓ Agent Registered</p>
+                    <p class="text-sm text-gray-400">Agent ID: ${data.agent.agent_id}</p>
+                    <p class="text-sm text-gray-400">Domain: ${data.agent.domain}</p>
+                `;
+                state.registration = data.agent;
+                document.getElementById('step3').classList.remove('opacity-50');
+                checkTEE();
+            } else {
+                content.innerHTML = `
+                    <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        Register On-Chain
+                    </button>
+                `;
+            }
+        }
+
+        async function checkTEE() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+
+            const step3 = document.getElementById('step3');
+            const content = document.getElementById('step3-content');
+            const status = document.getElementById('step3-status');
+
+            if (data.agent.tee_verified) {
+                // Already verified - show checkmark
+                step3.className = 'bg-gray-800 rounded-lg p-6';
+                status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+                status.innerHTML = '✓';
+                content.innerHTML = `
+                    <p class="text-green-400 mb-2">✓ TEE Verified</p>
+                    <p class="text-sm text-gray-400">Agent ID: ${data.agent.agent_id}</p>
+                `;
+                document.getElementById('step4').classList.remove('opacity-50');
+                markAgentReady();
+            } else {
+                content.innerHTML = `
+                    <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        Verify TEE
+                    </button>
+                `;
+            }
+        }
+
+        function markAgentReady() {
+            const step4 = document.getElementById('step4');
+            const content = document.getElementById('step4-content');
+            const status = document.getElementById('step4-status');
+
+            step4.className = 'bg-gray-800 rounded-lg p-6';
+            status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+            status.innerHTML = '✓';
+            content.innerHTML = `
+                <p class="text-green-400 mb-2">✓ Agent Ready</p>
+                <p class="text-sm text-gray-400">A2A endpoints active</p>
+                <a href="/.well-known/agent-card.json" class="text-blue-400 hover:text-blue-300 text-sm">
+                    → View Agent Card
+                </a>
+            `;
+        }
+
+        async function registerTEE() {
+            const content = document.getElementById('step3-content');
+            content.innerHTML = '<p class="text-yellow-400">Verifying TEE...</p>';
+
+            try {
+                const res = await fetch('/api/tee/register', {method: 'POST'});
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    checkTEE();
+                } else {
+                    const errorMsg = data.detail || data.error || 'Unknown error';
+                    content.innerHTML = `
+                        <p class="text-red-400 mb-2">❌ TEE Verification Failed</p>
+                        <p class="text-sm text-gray-300 mb-2">${errorMsg}</p>
+                        <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                            Retry
+                        </button>
+                    `;
+                }
+            } catch (err) {
+                content.innerHTML = `
+                    <p class="text-red-400 mb-2">❌ TEE Verification Failed</p>
+                    <p class="text-sm text-gray-300 mb-2">${err.message}</p>
+                    <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Retry
+                    </button>
+                `;
+            }
+        }
+
+        async function register() {
+            const content = document.getElementById('step2-content');
+            content.innerHTML = '<p class="text-yellow-400">Registering...</p>';
+
+            try {
+                const res = await fetch('/api/register', {method: 'POST'});
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    checkRegistration();
+                } else {
+                    // Show error from API
+                    const errorMsg = data.detail || data.error || 'Unknown error';
+                    content.innerHTML = `
+                        <p class="text-red-400 mb-2">❌ Registration Failed</p>
+                        <p class="text-sm text-gray-300 mb-2">${errorMsg}</p>
+                        <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                            Retry
+                        </button>
+                    `;
+                }
+            } catch (err) {
+                content.innerHTML = `
+                    <p class="text-red-400 mb-2">❌ Registration Failed</p>
+                    <p class="text-sm text-gray-300 mb-2">${err.message}</p>
+                    <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Retry
+                    </button>
+                `;
+            }
+        }
+
+        loadWallet();
+    </script>
+</body>
+</html>

@@ -1,34 +1,25 @@
-# Environment files
-.env
-.env.*
-
-# Documentation
-docs/
-README.md
-
-# Development tools
-.taskmaster/
-.claude/
-.cursor/
-.git/
-.gitignore
-
-# Python cache
-__pycache__/
+__pycache__
 *.pyc
 *.pyo
 *.pyd
-.pytest_cache/
-
-# IDE files
-.vscode/
-.idea/
-
-# Logs
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.git
+.gitignore
 *.log
-logs/
-
-# Temporary files
-*.tmp
-*.temp
 .DS_Store
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.env.local
+.env.*.local

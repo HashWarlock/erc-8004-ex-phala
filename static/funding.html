@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEE Agent - Wallet Funding</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2">TEE Agent Wallet Funding</h1>
+            <p class="text-gray-400">Fund your agent wallet to enable on-chain registration</p>
+        </div>
+
+        <div id="loading" class="text-center py-20">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-400">Loading wallet...</p>
+        </div>
+
+        <div id="content" class="hidden">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Wallet Address</h2>
+                <div class="flex items-center gap-4 mb-4">
+                    <code id="address" class="flex-1 bg-gray-700 p-3 rounded text-sm break-all"></code>
+                    <button onclick="copyAddress()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Copy</button>
+                </div>
+                <div id="qrcode" class="flex justify-center my-6"></div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Balance</h2>
+                <div class="text-3xl font-mono mb-2">
+                    <span id="balance">0</span> <span class="text-gray-400 text-xl">ETH</span>
+                </div>
+                <div class="text-sm text-gray-400 mb-4">
+                    Minimum required: <span id="minBalance">0.001</span> ETH
+                </div>
+                <div id="status" class="flex items-center gap-2">
+                    <div id="statusDot" class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <span id="statusText">Waiting for funds...</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Network Info</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-gray-400 text-sm">Chain</p>
+                        <p id="chainName" class="font-mono">Base Sepolia</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Chain ID</p>
+                        <p id="chainId" class="font-mono">84532</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-gray-400 text-sm mb-2">Get testnet ETH:</p>
+                    <a href="https://www.alchemy.com/faucets/base-sepolia" target="_blank"
+                       class="text-blue-400 hover:text-blue-300">Base Sepolia Faucet →</a>
+                </div>
+            </div>
+
+            <button id="continueBtn" disabled
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-3 rounded-lg font-bold text-lg transition">
+                Continue to Registration
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let walletData = null;
+        let pollInterval = null;
+
+        async function loadWallet() {
+            try {
+                const res = await fetch('/api/wallet');
+                walletData = await res.json();
+
+                document.getElementById('address').textContent = walletData.address;
+                document.getElementById('chainName').textContent = walletData.chain_name;
+                document.getElementById('chainId').textContent = walletData.chain_id;
+                document.getElementById('minBalance').textContent = walletData.minimum_balance;
+
+                new QRCode(document.getElementById('qrcode'), {
+                    text: walletData.qr_code_data,
+                    width: 200,
+                    height: 200
+                });
+
+                updateBalance();
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+
+                pollInterval = setInterval(updateBalance, 5000);
+            } catch (err) {
+                console.error('Failed to load wallet:', err);
+                document.getElementById('loading').innerHTML = '<p class="text-red-400">Failed to load wallet</p>';
+            }
+        }
+
+        async function updateBalance() {
+            try {
+                const res = await fetch('/api/wallet');
+                const data = await res.json();
+
+                document.getElementById('balance').textContent = parseFloat(data.balance).toFixed(4);
+
+                if (data.funded) {
+                    document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-green-500';
+                    document.getElementById('statusText').textContent = 'Wallet funded ✓';
+                    document.getElementById('continueBtn').disabled = false;
+                    clearInterval(pollInterval);
+                } else {
+                    document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-red-500';
+                    document.getElementById('statusText').textContent = 'Waiting for funds...';
+                }
+            } catch (err) {
+                console.error('Failed to update balance:', err);
+            }
+        }
+
+        function copyAddress() {
+            navigator.clipboard.writeText(walletData.address);
+            alert('Address copied!');
+        }
+
+        document.getElementById('continueBtn').addEventListener('click', () => {
+            window.location.href = '/dashboard';
+        });
+
+        loadWallet();
+    </script>
+</body>
+</html>

@@ -1,258 +1,164 @@
-# ERC-8004 Trustless Agents - Phala Cloud Edition
+# ERC-8004 TEE Agent
 
-**A complete implementation of the [ERC-8004 Trustless Agents](https://eips.ethereum.org/EIPS/eip-8004) standard with TEE-secured AI Agents using Phala Cloud.**
+Trustless AI agents with Intel TDX hardware security on Base Sepolia.
 
-This project demonstrates how AI agents can interact trustlessly using blockchain registries and Trusted Execution Environment (TEE) security, showcasing the future of decentralized AI collaboration.
+## Features
 
-## 🎯 Key Features
+- 🔐 TEE-derived keys (Intel TDX)
+- 🌐 ERC-8004 compliant
+- 📜 Remote attestation
+- 🔗 On-chain registration
+- 🤖 A2A protocol support
 
-- **✅ ERC-8004 Registry Contracts**: Complete Identity, Reputation, and Validation registry system
-- **✅ TEE Integration**: Phala Cloud TEE for secure key derivation and attestation
-- **✅ AI-Powered Agents**: Optional CrewAI integration for sophisticated analysis
-- **✅ Trustless Interactions**: Agents discover, validate, and provide feedback without pre-existing trust
-- **✅ Complete Audit Trail**: Full blockchain-based accountability
-- **✅ Multi-Agent Workflows**: Server, Validator, and Client agents working together
+## Quick Start
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Server Agent   │    │ Validator Agent │    │  Client Agent   │
-│  (TEE-Secured)  │    │                 │    │  (TEE-Secured)  │
-│                 │    │                 │    │                 │
-│ • Market        │    │ • Validation    │    │ • Feedback      │
-│   Analysis      │    │   Services      │    │   Submission    │
-│ • TEE           │    │ • Quality       │    │ • TEE           │
-│   Attestation   │    │   Assessment    │    │   Attestation   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────────┐
-                    │  ERC-8004 Registries│
-                    │  (Smart Contracts)  │
-                    │                     │
-                    │ • Identity Registry │
-                    │ • Reputation Registry│
-                    │ • Validation Registry│
-                    └─────────────────────┘
-                                 │
-                    ┌─────────────────────┐
-                    │   Phala Cloud TEE   │
-                    │                     │
-                    │ • Key Derivation    │
-                    │ • Attestation       │
-                    │ • Secure Execution │
-                    └─────────────────────┘
-```
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **[Flox](https://flox.dev)** - Environment manager (recommended)
-- **Python 3.8+** - Runtime environment
-- **Node.js 16+** - For Foundry installation
-- **Foundry** - Smart contract toolkit
-
-### Installation
-
-1. **Setup with Flox (Recommended):**
-   ```bash
-   # Install Flox if not already installed
-   # https://flox.dev/docs/install-flox/install
-   
-   # Clone the repository
-   git clone https://github.com/your-org/erc-8004-ex-phala.git
-   cd erc-8004-ex-phala
-   
-   # Activate Flox environment
-   flox activate
-   ```
-
-2. **Alternative: Manual Setup:**
-   ```bash
-   # Install Python dependencies
-   pip install -r requirements.txt
-   
-   # Install Foundry
-   curl -L https://foundry.paradigm.xyz | bash
-   foundryup
-   
-   # Build contracts
-   cd contracts && forge build && cd ..
-   ```
-
-### Running the Demo
+### Using Docker (Recommended)
 
 ```bash
-# Complete automated demo
-./run_demo.sh
-
-# Or run components individually:
-
-# 1. Start local blockchain
-flox activate -- anvil
-
-# 2. Deploy contracts (in new terminal)
-flox activate -- make deploy
-
-# 3. Run end-to-end test
-flox activate -- python tests/e2e/test_simple.py
-
-# 4. (Optional) Start API server
-flox activate -- python run_api.py
-```
-
-## 📋 Demo Workflow
-
-### Step 1: Contract Deployment
-Deploys the three ERC-8004 registry contracts to create the trustless infrastructure.
-
-### Step 2: Agent Initialization
-- **TEE Server Agent**: Market analysis with TEE-secured keys
-- **Validator Agent**: Analysis validation service
-- **TEE Client Agent**: Feedback submission with attestation
-
-### Step 3: Registration
-All agents register on-chain, receiving unique agent IDs.
-
-### Step 4: Market Analysis
-Server agent performs analysis (with optional AI enhancement).
-
-### Step 5: Validation Request
-Server submits work for validation, creating on-chain request.
-
-### Step 6: Validation
-Validator assesses the analysis and provides score.
-
-### Step 7: Feedback
-Client authorized to provide feedback, building reputation.
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Create a `.env` file from the example:
-```bash
+git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
+cd erc-8004-ex-phala
 cp .env.example .env
+# Edit .env with your config
+docker compose up -d
 ```
 
-Key configurations:
-- `RPC_URL`: Blockchain RPC endpoint (default: local Anvil)
-- `USE_TEE_AUTH`: Enable TEE-based authentication
-- `PRIVATE_KEY`: Fallback key when not using TEE
-- AI API keys (optional): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+### Manual Setup
 
-### TEE Configuration
+```bash
+git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
+cd erc-8004-ex-phala
+pip install -e .
+cp .env.example .env
+# Edit .env with your config
+python deployment/local_agent_server.py
+```
 
-TEE agents use deterministic key derivation based on:
-- Agent domain
-- Agent salt
-- TEE secure environment
+Open http://localhost:8000
 
-## 📁 Project Structure
+**See [QUICKSTART.md](QUICKSTART.md) for details**
+
+## Project Structure
 
 ```
 erc-8004-ex-phala/
-├── agents/                  # Agent implementations
-│   ├── base_agent.py       # Base agent class
-│   ├── server_agent.py     # Market analysis agent
-│   ├── validator_agent.py  # Validation agent
-│   ├── client_agent.py     # Feedback agent
-│   ├── tee_*.py           # TEE-enabled versions
-│   └── eip712_signer.py   # EIP-712 signing
-├── contracts/              # Smart contracts
-│   ├── src/               # Solidity source
-│   └── script/            # Deployment scripts
-├── tests/                  # Test suite
-│   ├── e2e/               # End-to-end tests
-│   ├── integration/       # Integration tests
-│   └── unit/              # Unit tests
-├── api/                    # REST API
-│   ├── main.py           # FastAPI application
-│   └── models.py         # Data models
-├── scripts/               # Utility scripts
-├── Makefile              # Build commands
-└── run_demo.sh           # Demo runner
-
+├── contracts/              # Reference Solidity contracts
+│   ├── TEERegistry.sol
+│   └── ITEERegistry.sol
+├── src/agent/             # Core agent logic
+│   ├── base.py
+│   ├── tee_auth.py
+│   └── tee_verifier.py
+├── deployment/            # Server entry point
+│   └── local_agent_server.py
+└── static/                # Web UI
+    ├── funding.html
+    └── dashboard.html
 ```
 
-## 🧪 Testing
+## Architecture
+
+```
+┌─────────────┐
+│   Wallet    │ Fund with Base Sepolia ETH
+└─────────────┘
+       ↓
+┌─────────────┐
+│  Register   │ Identity Registry (on-chain)
+└─────────────┘
+       ↓
+┌─────────────┐
+│ TEE Verify  │ Attestation + Code Measurement
+└─────────────┘
+       ↓
+┌─────────────┐
+│    Ready    │ A2A endpoints active
+└─────────────┘
+```
+
+## API Endpoints
+
+- `GET /` - Funding page
+- `GET /dashboard` - Registration flow
+- `GET /api/wallet` - Wallet address & balance
+- `POST /api/register` - Register agent on-chain
+- `POST /api/tee/register` - Submit TEE attestation
+- `GET /a2a/card` - Agent card (ERC-8004)
+- `POST /a2a/message` - A2A messaging
+- `POST /a2a/task` - Task execution
+
+## Deploy Contracts
 
 ```bash
-# Run all tests
-flox activate -- make test
-
-# Run specific test categories
-flox activate -- pytest tests/unit/          # Unit tests
-flox activate -- pytest tests/integration/   # Integration tests
-flox activate -- pytest tests/e2e/          # End-to-end tests
-
-# Run simple E2E demo
-flox activate -- python tests/e2e/test_simple.py
+export PRIVATE_KEY=0x...
+./scripts/deploy_contracts.sh
 ```
 
-## 🌐 API Server
+Updates `deployed_addresses.json`
 
-The project includes a REST API for web integration:
+## Configuration
+
+See `.env.example`:
 
 ```bash
-# Start API server
-flox activate -- python run_api.py
-
-# Access at http://localhost:8000
-# API docs at http://localhost:8000/docs
+AGENT_DOMAIN=localhost:8000
+AGENT_SALT=unique-salt
+IDENTITY_REGISTRY_ADDRESS=0x19fad4adD9f8C4A129A078464B22E1506275FbDd
 ```
 
-### Key Endpoints
+## Documentation
 
-- `GET /health` - Health check
-- `GET /agents` - List all agents
-- `POST /server/analyze` - Request market analysis
-- `POST /validator/validate` - Validate analysis
-- `POST /client/feedback/submit` - Submit feedback
-- `GET /attestation/{agent_type}` - Get TEE attestation
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 3 min
+- **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** - Architecture
+- **[STAKEHOLDER_DEMO.md](STAKEHOLDER_DEMO.md)** - EF presentation
+- **[contracts/](contracts/)** - Smart contracts
+- **[src/agent/](src/agent/)** - Core code
 
-## 🔐 Security Features
+## How It Works
 
-### TEE Integration
-- Deterministic key derivation in secure environment
-- Attestation quotes for verification
-- Protected private key operations
+1. **Generate Wallet** - TEE derives keys from domain+salt
+2. **Fund** - Add 0.001 ETH to agent address
+3. **Register** - Call Identity Registry `newAgent()`
+4. **Verify TEE** - Submit attestation to TEE Registry
+5. **Go Live** - A2A endpoints ready
 
-### Smart Contract Security
-- On-chain agent registration
-- Immutable audit trails
-- Permission-based operations
+**Trust Model**: Hardware-backed cryptographic proof via Intel TDX attestation
 
-### Agent Security
-- EIP-712 typed signatures
-- Domain separation
-- Replay protection
+## Tech Stack
 
-## 📚 Documentation
+- **TEE**: Intel TDX (Phala dstack)
+- **Chain**: Base Sepolia
+- **Backend**: Python/FastAPI
+- **Contracts**: Solidity ^0.8.20
+- **Frontend**: HTML/Tailwind
 
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [API Documentation](api/README.md)
-- [Contract Documentation](contracts/README.md)
-- [Development Guide](docs/DEVELOPMENT.md)
+## Development
 
-## 🤝 Contributing
+```bash
+# Run server
+python deployment/local_agent_server.py
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+# Test
+pytest tests/
 
-## 📄 License
+# Deploy contracts
+./scripts/deploy_contracts.sh
+```
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+## ERC-8004 Compliance
 
-## 🙏 Acknowledgments
+✅ Agent Cards
+✅ Identity Registry
+✅ TEE Registry
+✅ A2A Protocol
+✅ Attestation Verification
 
-- [ERC-8004 Standard](https://eips.ethereum.org/EIPS/eip-8004) authors
-- [Phala Cloud](https://phala.com) for TEE infrastructure
-- [Foundry](https://book.getfoundry.sh/) for smart contract tools
-- [CrewAI](https://www.crewai.com/) for AI agent framework
+## License
 
-## ⚠️ Disclaimer
+MIT
 
-This is an example implementation for demonstration purposes. Perform security audits before production use.
+## Links
+
+- **Spec**: [ERC-8004](https://eips.ethereum.org/EIPS/eip-8004)
+- **Reference**: [dstack-erc8004-poc](https://github.com/h4x3rotab/dstack-erc8004-poc)
+- **Phala**: [phala.network](https://phala.network)
+- **Base**: [base.org](https://base.org)

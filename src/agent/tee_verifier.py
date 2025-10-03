@@ -3,6 +3,7 @@
 from typing import Dict, Any
 from web3 import Web3
 from eth_account import Account
+from eth_account.messages import encode_defunct
 
 
 class TEEVerifier:
@@ -52,14 +53,30 @@ class TEEVerifier:
         agent_address: str,
         mock_mode: bool = True
     ) -> Dict[str, Any]:
-        """Register TEE key with mock proof."""
+        """Register TEE key - uses mock proof with actual agent address."""
 
-        # Mock proof data
         tee_arch = Web3.to_bytes(text="TDX_DSTACK").ljust(32, b'\x00')
         code_measurement = bytes.fromhex("d641ca7589adba8fcd079f923ebccee92195cb998cfdf8dcc500585bfdb06df6")
         pubkey = Web3.to_checksum_address(agent_address)
-        code_config_uri = "https://3af8f2cbcd12330c938cd66efcf072694f48e105-8090.dstack-base-prod9.phala.network"
-        proof = bytes.fromhex("0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000e0d641ca7589adba8fcd079f923ebccee92195cb998cfdf8dcc500585bfdb06df600000000000000000000000059943b97cb5c074ebc05910e4d473f0573ad01470000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000005568747470733a2f2f336166386632636263643132333330633933386364363665666366303732363934663438653130352d383039302e64737461636b2d626173652d70726f64392e7068616c612e6e6574776f726b0000000000000000000000000000000000000000000000000000000000000000000000000000000000004125ca607ef44fefaccf68d684a878b3b00ffe2dde6644fb71e15df1cf1c17611453363e4a765a3d9ab643f9cf26683f63d487c5fdabdcbd2429267f85b5432b211b00000000000000000000000000000000000000000000000000000000000000")
+        code_config_uri = "ipfs://mock-config"
+
+        # Generate proof with actual agent signature
+        import eth_abi
+
+        inner_data = eth_abi.encode(
+            ['bytes32', 'address', 'string'],
+            [code_measurement, pubkey, code_config_uri]
+        )
+
+        # Sign with agent's key
+        message = encode_defunct(primitive=inner_data)
+        signed = self.account.sign_message(message)
+        signature = signed.signature
+
+        proof = eth_abi.encode(
+            ['bytes', 'bytes'],
+            [inner_data, signature]
+        )
 
         # Check if already registered
         if await self.check_tee_registered(agent_id, pubkey):

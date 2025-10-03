@@ -395,6 +395,43 @@ async def register_tee():
         raise HTTPException(status_code=500, detail=f"TEE registration failed: {str(e)}")
 
 
+@app.get("/a2a/card")
+async def a2a_card():
+    """A2A protocol: Get agent card."""
+    if not agent:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+    return await agent._create_agent_card()
+
+
+@app.post("/a2a/message")
+async def a2a_message(request: Dict[str, Any]):
+    """A2A protocol: Handle message."""
+    if not agent:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+
+    return {
+        "from": await agent._get_agent_address(),
+        "to": request.get("from"),
+        "content": f"Echo: {request.get('content')}",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
+@app.post("/a2a/task")
+async def a2a_task(request: Dict[str, Any]):
+    """A2A protocol: Handle task."""
+    if not agent:
+        raise HTTPException(status_code=503, detail="Agent not initialized")
+
+    result = await agent.process_task(request)
+    return {
+        "task_id": request.get("task_id"),
+        "status": "completed",
+        "result": result,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""

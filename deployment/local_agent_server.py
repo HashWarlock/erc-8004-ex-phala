@@ -193,23 +193,36 @@ async def get_wallet():
 
 @app.get("/api/status")
 async def get_status():
-    """Get agent status and identity information."""
+    """Get agent status - check on-chain."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
     agent_address = await agent._get_agent_address()
+
+    # Check on-chain registration
+    domain_check = await agent._registry_client.check_agent_registration(domain=agent.config.domain)
+    address_check = await agent._registry_client.check_agent_registration(agent_address=agent_address)
+
+    is_registered = False
+    agent_id = None
     tee_verified = False
 
-    if agent.is_registered and agent.agent_id and tee_verifier:
-        tee_verified = await tee_verifier.check_tee_registered(agent.agent_id, agent_address)
+    if domain_check["registered"] and address_check["registered"] and domain_check["agent_id"] == address_check["agent_id"]:
+        is_registered = True
+        agent_id = domain_check["agent_id"]
+        agent.agent_id = agent_id
+        agent.is_registered = True
+
+        if tee_verifier:
+            tee_verified = await tee_verifier.check_tee_registered(agent_id, agent_address)
 
     return {
         "status": "operational",
         "agent": {
             "domain": agent.config.domain,
             "address": agent_address,
-            "agent_id": agent.agent_id,
-            "is_registered": agent.is_registered,
+            "agent_id": agent_id,
+            "is_registered": is_registered,
             "tee_verified": tee_verified,
             "chain_id": agent.config.chain_id
         },

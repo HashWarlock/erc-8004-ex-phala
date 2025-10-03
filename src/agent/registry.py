@@ -73,9 +73,8 @@ class RegistryClient:
                 "name": "resolveByDomain",
                 "outputs": [
                     {"name": "agentId", "type": "uint256"},
-                    {"name": "agentAddress", "type": "address"},
-                    {"name": "domain", "type": "string"},
-                    {"name": "timestamp", "type": "uint256"}
+                    {"name": "agentDomain", "type": "string"},
+                    {"name": "agentAddress", "type": "address"}
                 ],
                 "stateMutability": "view",
                 "type": "function"
@@ -85,9 +84,8 @@ class RegistryClient:
                 "name": "resolveByAddress",
                 "outputs": [
                     {"name": "agentId", "type": "uint256"},
-                    {"name": "agentAddress", "type": "address"},
-                    {"name": "domain", "type": "string"},
-                    {"name": "timestamp", "type": "uint256"}
+                    {"name": "agentDomain", "type": "string"},
+                    {"name": "agentAddress", "type": "address"}
                 ],
                 "stateMutability": "view",
                 "type": "function"
@@ -189,27 +187,27 @@ class RegistryClient:
         """
         try:
             if domain:
-                # resolveByDomain returns (agentId, agentAddress, domain, timestamp)
+                # resolveByDomain returns (agentId, agentDomain, agentAddress)
                 result = self.identity_contract.functions.resolveByDomain(domain).call()
-                if result[0] > 0:  # agentId > 0 means registered
+                if result[0] > 0:
                     return {
                         "registered": True,
                         "agent_id": result[0],
-                        "agent_address": result[1],
-                        "domain": result[2]
+                        "domain": result[1],
+                        "agent_address": result[2]
                     }
 
             if agent_address:
-                # resolveByAddress returns (agentId, agentAddress, domain, timestamp)
+                # resolveByAddress returns (agentId, agentDomain, agentAddress)
                 result = self.identity_contract.functions.resolveByAddress(
                     Web3.to_checksum_address(agent_address)
                 ).call()
-                if result[0] > 0:  # agentId > 0 means registered
+                if result[0] > 0:
                     return {
                         "registered": True,
                         "agent_id": result[0],
-                        "agent_address": result[1],
-                        "domain": result[2]
+                        "domain": result[1],
+                        "agent_address": result[2]
                     }
         except Exception as e:
             print(f"⚠️  Registration check: {e}")

@@ -257,8 +257,8 @@ class RegistryClient:
             if address_check["registered"] and address_check["domain"] != domain:
                 raise ValueError(f"Address already registered to different domain: {address_check['domain']}")
 
-        # Use newAgent function with 0.005 ETH fee
-        registration_fee = self.w3.to_wei(0.005, 'ether')
+        # Use newAgent function with 0.0001 ETH fee
+        registration_fee = self.w3.to_wei(0.0001, 'ether')
 
         tx = self.identity_contract.functions.newAgent(
             domain,

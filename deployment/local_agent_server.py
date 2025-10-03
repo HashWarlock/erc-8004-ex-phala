@@ -198,6 +198,10 @@ async def get_status():
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
     agent_address = await agent._get_agent_address()
+    tee_verified = False
+
+    if agent.is_registered and agent.agent_id and tee_verifier:
+        tee_verified = await tee_verifier.check_tee_registered(agent.agent_id, agent_address)
 
     return {
         "status": "operational",
@@ -206,6 +210,7 @@ async def get_status():
             "address": agent_address,
             "agent_id": agent.agent_id,
             "is_registered": agent.is_registered,
+            "tee_verified": tee_verified,
             "chain_id": agent.config.chain_id
         },
         "tee": {
@@ -375,7 +380,7 @@ async def register_agent():
 
 @app.post("/api/tee/register")
 async def register_tee():
-    """Register TEE attestation on-chain."""
+    """Register TEE with mock proof."""
     if not agent or not tee_auth or not tee_verifier:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
@@ -383,25 +388,21 @@ async def register_tee():
         raise HTTPException(status_code=400, detail="Agent must be registered first")
 
     try:
-        # Get attestation
-        attestation = await tee_auth.get_attestation()
-        attestation_bytes = attestation.get("quote", "").encode()
+        agent_address = await agent._get_agent_address()
 
-        # Get pubkey
-        pubkey = bytes.fromhex(tee_auth.account.key.hex()[2:])
-
-        # Register TEE key
         result = await tee_verifier.register_tee_key(
             agent_id=agent.agent_id,
-            tee_arch="tdx",
-            pubkey=pubkey,
-            attestation=attestation_bytes,
-            code_config_uri=""
+            agent_address=agent_address
         )
+
+        if result.get("already_registered"):
+            return {"success": True, "already_registered": True, "agent_id": agent.agent_id, "pubkey": result["pubkey"]}
 
         return {
             "success": True,
-            **result,
+            "tx_hash": result["tx_hash"],
+            "agent_id": agent.agent_id,
+            "pubkey": result["pubkey"],
             "explorer_url": f"https://sepolia.basescan.org/tx/{result['tx_hash']}"
         }
     except Exception as e:

@@ -242,11 +242,22 @@ class RegistryClient:
         if not self.account:
             raise ValueError("Account required for registration")
 
-        # Check if already registered
-        existing = await self.check_agent_registration(domain=domain, agent_address=agent_address)
-        if existing["registered"]:
-            print(f"✅ Agent already registered with ID: {existing['agent_id']}")
-            return existing["agent_id"]
+        # Check if already registered - need to check BOTH domain and address match
+        domain_check = await self.check_agent_registration(domain=domain)
+        address_check = await self.check_agent_registration(agent_address=agent_address)
+
+        # If domain and address both registered AND match each other, agent is already registered
+        if (domain_check["registered"] and address_check["registered"] and
+            domain_check["agent_id"] == address_check["agent_id"]):
+            print(f"✅ Agent already registered with ID: {domain_check['agent_id']}")
+            return domain_check["agent_id"]
+
+        # If domain registered but to different address, or address registered to different domain - conflict
+        if domain_check["registered"] or address_check["registered"]:
+            if domain_check["registered"] and domain_check["agent_address"].lower() != agent_address.lower():
+                raise ValueError(f"Domain '{domain}' already registered to different address: {domain_check['agent_address']}")
+            if address_check["registered"] and address_check["domain"] != domain:
+                raise ValueError(f"Address already registered to different domain: {address_check['domain']}")
 
         # Use newAgent function with 0.005 ETH fee
         registration_fee = self.w3.to_wei(0.005, 'ether')

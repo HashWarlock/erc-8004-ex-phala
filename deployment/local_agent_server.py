@@ -360,7 +360,17 @@ async def register_agent():
             "explorer_url": f"https://sepolia.basescan.org/tx/{tx_hash}"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+        error_msg = str(e).lower()
+
+        # Parse error to provide user-friendly message
+        if "already registered" in error_msg or "domain" in error_msg:
+            detail = f"Domain '{agent.config.domain[:50]}...' is already registered. Please use a different domain or agent address."
+        elif "insufficient" in error_msg or "balance" in error_msg:
+            detail = f"Insufficient balance. Need at least 0.006 ETH (0.005 registration fee + gas). Current: {balance_eth:.4f} ETH"
+        else:
+            detail = f"Registration failed: {str(e)}"
+
+        raise HTTPException(status_code=400, detail=detail)
 
 
 @app.post("/api/tee/register")

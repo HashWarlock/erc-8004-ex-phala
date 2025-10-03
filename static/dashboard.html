@@ -131,11 +131,27 @@
                 const res = await fetch('/api/register', {method: 'POST'});
                 const data = await res.json();
 
-                if (data.success) {
+                if (res.ok && data.success) {
                     checkRegistration();
+                } else {
+                    // Show error from API
+                    const errorMsg = data.detail || data.error || 'Unknown error';
+                    content.innerHTML = `
+                        <p class="text-red-400 mb-2">❌ Registration Failed</p>
+                        <p class="text-sm text-gray-300 mb-2">${errorMsg}</p>
+                        <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                            Retry
+                        </button>
+                    `;
                 }
             } catch (err) {
-                content.innerHTML = `<p class="text-red-400">Registration failed: ${err.message}</p>`;
+                content.innerHTML = `
+                    <p class="text-red-400 mb-2">❌ Registration Failed</p>
+                    <p class="text-sm text-gray-300 mb-2">${err.message}</p>
+                    <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Retry
+                    </button>
+                `;
             }
         }
 

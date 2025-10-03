@@ -41,7 +41,7 @@ Open http://localhost:8000
 
 ```
 erc-8004-ex-phala/
-├── contracts/              # Solidity contracts
+├── contracts/              # Reference Solidity contracts
 │   ├── TEERegistry.sol
 │   └── ITEERegistry.sol
 ├── src/agent/             # Core agent logic
@@ -50,11 +50,9 @@ erc-8004-ex-phala/
 │   └── tee_verifier.py
 ├── deployment/            # Server entry point
 │   └── local_agent_server.py
-├── static/                # Web UI
-│   ├── funding.html
-│   └── dashboard.html
-└── scripts/               # Deploy scripts
-    └── deploy_contracts.sh
+└── static/                # Web UI
+    ├── funding.html
+    └── dashboard.html
 ```
 
 ## Architecture

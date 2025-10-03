@@ -33,13 +33,6 @@ Open http://localhost:8000
 4. **TEE Verification** - Automatic attestation submission
 5. **Agent Ready** - A2A endpoints active
 
-## Deploy Contracts (Optional)
-
-```bash
-export PRIVATE_KEY=0x...
-./scripts/deploy_contracts.sh
-```
-
 ## Test A2A
 
 ```bash

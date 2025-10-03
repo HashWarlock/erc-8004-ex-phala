@@ -113,11 +113,87 @@
                 `;
                 state.registration = data.agent;
                 document.getElementById('step3').classList.remove('opacity-50');
-                // Note: TEE registration would be triggered here
+                checkTEE();
             } else {
                 content.innerHTML = `
                     <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
                         Register On-Chain
+                    </button>
+                `;
+            }
+        }
+
+        async function checkTEE() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+
+            const step3 = document.getElementById('step3');
+            const content = document.getElementById('step3-content');
+            const status = document.getElementById('step3-status');
+
+            if (data.agent.tee_verified) {
+                // Already verified - show checkmark
+                step3.className = 'bg-gray-800 rounded-lg p-6';
+                status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+                status.innerHTML = '✓';
+                content.innerHTML = `
+                    <p class="text-green-400 mb-2">✓ TEE Verified</p>
+                    <p class="text-sm text-gray-400">Agent ID: ${data.agent.agent_id}</p>
+                `;
+                document.getElementById('step4').classList.remove('opacity-50');
+                markAgentReady();
+            } else {
+                content.innerHTML = `
+                    <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        Verify TEE
+                    </button>
+                `;
+            }
+        }
+
+        function markAgentReady() {
+            const step4 = document.getElementById('step4');
+            const content = document.getElementById('step4-content');
+            const status = document.getElementById('step4-status');
+
+            step4.className = 'bg-gray-800 rounded-lg p-6';
+            status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+            status.innerHTML = '✓';
+            content.innerHTML = `
+                <p class="text-green-400 mb-2">✓ Agent Ready</p>
+                <p class="text-sm text-gray-400">A2A endpoints active</p>
+                <a href="/.well-known/agent-card.json" class="text-blue-400 hover:text-blue-300 text-sm">
+                    → View Agent Card
+                </a>
+            `;
+        }
+
+        async function registerTEE() {
+            const content = document.getElementById('step3-content');
+            content.innerHTML = '<p class="text-yellow-400">Verifying TEE...</p>';
+
+            try {
+                const res = await fetch('/api/tee/register', {method: 'POST'});
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    checkTEE();
+                } else {
+                    const errorMsg = data.detail || data.error || 'Unknown error';
+                    content.innerHTML = `
+                        <p class="text-red-400 mb-2">❌ TEE Verification Failed</p>
+                        <p class="text-sm text-gray-300 mb-2">${errorMsg}</p>
+                        <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                            Retry
+                        </button>
+                    `;
+                }
+            } catch (err) {
+                content.innerHTML = `
+                    <p class="text-red-400 mb-2">❌ TEE Verification Failed</p>
+                    <p class="text-sm text-gray-300 mb-2">${err.message}</p>
+                    <button onclick="registerTEE()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Retry
                     </button>
                 `;
             }

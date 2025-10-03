@@ -395,9 +395,10 @@ async def register_tee():
         raise HTTPException(status_code=500, detail=f"TEE registration failed: {str(e)}")
 
 
+@app.get("/.well-known/agent-card.json")
 @app.get("/a2a/card")
-async def a2a_card():
-    """A2A protocol: Get agent card."""
+async def agent_card():
+    """ERC-8004: Agent card at standard path."""
     if not agent:
         raise HTTPException(status_code=503, detail="Agent not initialized")
     return await agent._create_agent_card()

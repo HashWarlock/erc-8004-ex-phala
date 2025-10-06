@@ -139,15 +139,16 @@ class TEEAuthenticator:
 
         try:
             # Get attestation from TEE using get_quote
-            # Application data must be exactly 64 bytes
-            application_data = self._create_attestation_data(method="hash")
-
+            
+            import binascii
+            raw_address = binascii.a2b_hex(self.address.lstrip('0x'))
+            application_data = self._create_attestation_data(raw_address)
             quote_result = self.tee_client.get_quote(application_data)
 
             # Format attestation data
             attestation_data = {
-                "quote": quote_result.quote if hasattr(quote_result, 'quote') else str(quote_result),
-                "event_log": quote_result.event_log if hasattr(quote_result, 'event_log') else None,
+                "quote": quote_result.quote,
+                "event_log": quote_result.event_log,
                 "application_data": {
                     "raw": application_data.hex(),
                     "domain": self.domain,
@@ -188,37 +189,12 @@ class TEEAuthenticator:
             signed = self.account.unsafe_sign_hash(message)
             return signed.signature
 
-    def _create_attestation_data(self, method: str = "structured") -> bytes:
+    def _create_attestation_data(self, report_data) -> bytes:
         """
         Create 64-byte attestation data for TEE quote.
-
-        Args:
-            method: Method to use - "structured", "hash", or "padded"
-
-        Returns:
-            Exactly 64 bytes of application data
         """
-        if method == "hash":
-            # Use keccak256 hash of domain + address (32 bytes) + padding
-            data = f"{self.domain}:{self.address}:{self.salt}".encode('utf-8')
-            hash_bytes = keccak(data)  # 32 bytes
-            padding = b'\x00' * 32
-            result = hash_bytes + padding
-
-        elif method == "structured":
-            # Structured format: domain(20) + address(42) + padding(2)
-            domain_bytes = self.domain.encode('utf-8')[:20].ljust(20, b'\x00')
-            address_bytes = self.address.encode('utf-8')[:42].ljust(42, b'\x00')
-            padding = b'\x00' * 2
-            result = domain_bytes + address_bytes + padding
-
-        else:  # method == "padded"
-            # Simple padding method
-            data = f"{self.domain}:{self.address}".encode('utf-8')[:64]
-            result = data.ljust(64, b'\x00')
-
-        assert len(result) == 64, f"Attestation data must be 64 bytes, got {len(result)}"
-        return result
+        assert len(report_data) <= 64
+        return report_data.ljust(64, b'\x00')
 
     def get_private_key(self) -> str:
         """

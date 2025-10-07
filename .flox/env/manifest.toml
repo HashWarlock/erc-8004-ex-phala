@@ -1,0 +1,58 @@
+## Flox Environment Manifest for ERC-8004 Phala Cloud Project --------
+version = 1
+
+## Install Packages --------------------------------------------------
+[install]
+python3.pkg-path = "python3"
+nodejs.pkg-path = "nodejs"
+git.pkg-path = "git"
+curl.pkg-path = "curl"
+foundry.pkg-path = "foundry"
+jq.pkg-path = "jq"
+rustup.pkg-path = "rustup"
+
+## Environment Variables ---------------------------------------------
+[vars]
+PROJECT_NAME = "erc-8004-ex-phala"
+PYTHON_VERSION = "3.11"
+NODE_ENV = "production"
+
+## Activation Hook ---------------------------------------------------
+[hook]
+on-activate = '''
+  echo "🚀 Activating ERC-8004 Phala Cloud development environment..."
+  
+  pip install -e .
+  
+  echo "✅ Environment ready!"
+'''
+
+## Profile script ----------------------------------------------------
+[profile]
+bash = '''
+  # Display project info
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  ERC-8004 Trustless Agents - Phala Cloud Edition"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+'''
+
+zsh = '''
+  # Display project info
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  ERC-8004 Trustless Agents - Phala Cloud Edition"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+'''
+
+## Services ----------------------------------------------------------
+[services]
+
+## Other Environment Options -----------------------------------------
+[options]
+systems = [
+  "aarch64-darwin",
+  "aarch64-linux",
+  "x86_64-darwin",
+  "x86_64-linux"
+]

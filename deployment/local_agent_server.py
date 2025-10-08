@@ -426,7 +426,6 @@ async def register_tee():
     event_log = attestation['event_log']
 
     try:
-
         result = await tee_verifier.register_tee_key(
             agent_id=agent.agent_id,
             agent_address=agent_address,
@@ -447,6 +446,9 @@ async def register_tee():
             "explorer_url": f"https://sepolia.basescan.org/tx/{result['tx_hash']}"
         }
     except Exception as e:
+        import traceback
+        print(f"TEE registration error: {str(e)}")
+        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"TEE registration failed: {str(e)}")
 
 

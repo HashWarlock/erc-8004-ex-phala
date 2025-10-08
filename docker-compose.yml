@@ -9,7 +9,7 @@ services:
       - GITHUB_REPO=https://github.com/HashWarlock/erc-8004-ex-phala.git
       - GIT_COMMIT_HASH=HEAD
       - UPDATE_CODE=${UPDATE_CODE:-false}
-      - AGENT_DOMAIN=${AGENT_DOMAIN}
+      - AGENT_DOMAIN=https://${DSTACK_APP_ID}-8000.${DSTACK_GATEWAY_DOMAIN}
       - AGENT_SALT=${AGENT_SALT}
       - SANDBOX_URL=${SANDBOX_URL}
       - RPC_URL=${RPC_URL:-https://sepolia.base.org}
@@ -23,7 +23,7 @@ services:
       - app_data:/app
       - /var/run/dstack.sock:/var/run/dstack.sock
     ports:
-      - "8000:8000"
+      - "8000:80"
     restart: unless-stopped
     command: >
       bash -c "

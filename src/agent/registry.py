@@ -199,26 +199,38 @@ class RegistryClient:
         """
         try:
             if agent_address:
-                balance = self.identity_contract.functions.balanceOf(
-                    Web3.to_checksum_address(agent_address)
-                ).call()
+                checksum_address = Web3.to_checksum_address(agent_address)
+                print(f"🔍 Checking registration for: {checksum_address}")
+
+                balance = self.identity_contract.functions.balanceOf(checksum_address).call()
+                print(f"🔍 NFT Balance: {balance}")
 
                 if balance > 0:
                     # Find agent ID by checking totalAgents and ownerOf
                     total = self.identity_contract.functions.totalAgents().call()
+                    print(f"🔍 Total agents in registry: {total}")
+
                     for token_id in range(1, total + 1):
                         try:
                             owner = self.identity_contract.functions.ownerOf(token_id).call()
-                            if owner.lower() == agent_address.lower():
+                            if owner.lower() == checksum_address.lower():
+                                print(f"✅ Found agent ID {token_id} for address {checksum_address}")
                                 return {
                                     "registered": True,
                                     "agent_id": token_id,
                                     "agent_address": agent_address
                                 }
-                        except:
+                        except Exception as token_err:
+                            print(f"⚠️  Error checking token {token_id}: {token_err}")
                             continue
+
+                    print(f"⚠️  Balance is {balance} but couldn't find matching token ID")
+                else:
+                    print(f"⚠️  Address has no NFTs (balance: 0)")
         except Exception as e:
-            print(f"⚠️  Registration check: {e}")
+            print(f"⚠️  Registration check error: {e}")
+            import traceback
+            traceback.print_exc()
 
         return {"registered": False}
 

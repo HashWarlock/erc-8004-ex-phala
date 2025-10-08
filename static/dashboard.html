@@ -95,29 +95,44 @@
         }
 
         async function checkRegistration() {
-            const res = await fetch('/api/status');
-            const data = await res.json();
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
 
-            const step2 = document.getElementById('step2');
-            const content = document.getElementById('step2-content');
-            const status = document.getElementById('step2-status');
+                const step2 = document.getElementById('step2');
+                const content = document.getElementById('step2-content');
+                const status = document.getElementById('step2-status');
 
-            if (data.agent.is_registered) {
-                step2.className = 'bg-gray-800 rounded-lg p-6';
-                status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
-                status.innerHTML = '✓';
+                console.log('Registration check:', data.agent);
+
+                if (data.agent.is_registered && data.agent.agent_id) {
+                    step2.className = 'bg-gray-800 rounded-lg p-6';
+                    status.className = 'w-8 h-8 rounded-full bg-green-600 flex items-center justify-center';
+                    status.innerHTML = '✓';
+                    content.innerHTML = `
+                        <p class="text-green-400 mb-2">✓ Agent Registered</p>
+                        <p class="text-sm text-gray-400">Agent ID: ${data.agent.agent_id}</p>
+                        <p class="text-sm text-gray-400">Domain: ${data.agent.domain}</p>
+                    `;
+                    state.registration = data.agent;
+                    document.getElementById('step3').classList.remove('opacity-50');
+                    checkTEE();
+                } else {
+                    content.innerHTML = `
+                        <p class="text-sm text-gray-400 mb-2">Address: ${data.agent.address}</p>
+                        <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                            Register On-Chain
+                        </button>
+                    `;
+                }
+            } catch (err) {
+                console.error('Registration check failed:', err);
+                const content = document.getElementById('step2-content');
                 content.innerHTML = `
-                    <p class="text-green-400 mb-2">✓ Agent Registered</p>
-                    <p class="text-sm text-gray-400">Agent ID: ${data.agent.agent_id}</p>
-                    <p class="text-sm text-gray-400">Domain: ${data.agent.domain}</p>
-                `;
-                state.registration = data.agent;
-                document.getElementById('step3').classList.remove('opacity-50');
-                checkTEE();
-            } else {
-                content.innerHTML = `
-                    <button onclick="register()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
-                        Register On-Chain
+                    <p class="text-red-400 mb-2">Error checking registration</p>
+                    <p class="text-sm text-gray-300 mb-2">${err.message}</p>
+                    <button onclick="checkRegistration()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Retry
                     </button>
                 `;
             }
@@ -207,8 +222,16 @@
                 const res = await fetch('/api/register', {method: 'POST'});
                 const data = await res.json();
 
+                console.log('Registration response:', data);
+
                 if (res.ok && data.success) {
-                    checkRegistration();
+                    content.innerHTML = `
+                        <p class="text-green-400 mb-2">✓ Registration Transaction Complete</p>
+                        <p class="text-sm text-gray-400">Agent ID: ${data.agent_id}</p>
+                        <p class="text-sm text-gray-400">Verifying...</p>
+                    `;
+                    // Wait a moment for blockchain state to update, then check
+                    setTimeout(checkRegistration, 2000);
                 } else {
                     // Show error from API
                     const errorMsg = data.detail || data.error || 'Unknown error';
@@ -221,6 +244,7 @@
                     `;
                 }
             } catch (err) {
+                console.error('Registration error:', err);
                 content.innerHTML = `
                     <p class="text-red-400 mb-2">❌ Registration Failed</p>
                     <p class="text-sm text-gray-300 mb-2">${err.message}</p>

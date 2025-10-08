@@ -68,6 +68,7 @@ erc-8004-ex-phala/
 - `GET /api/status` - Agent status
 - `POST /api/register` - Register on-chain
 - `POST /api/tee/register` - Register TEE key
+- `POST /api/metadata/update` - Update on-chain metadata
 - `POST /tasks` - A2A task submission
 - `GET /tasks/{id}` - Task status
 

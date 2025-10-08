@@ -199,17 +199,16 @@ async def get_status():
 
     agent_address = await agent._get_agent_address()
 
-    # Check on-chain registration
-    domain_check = await agent._registry_client.check_agent_registration(domain=agent.config.domain)
+    # Check on-chain registration (ERC-721 based, check by address only)
     address_check = await agent._registry_client.check_agent_registration(agent_address=agent_address)
 
     is_registered = False
     agent_id = None
     tee_verified = False
 
-    if domain_check["registered"] and address_check["registered"] and domain_check["agent_id"] == address_check["agent_id"]:
+    if address_check["registered"]:
         is_registered = True
-        agent_id = domain_check["agent_id"]
+        agent_id = address_check["agent_id"]
         agent.agent_id = agent_id
         agent.is_registered = True
 
@@ -350,12 +349,11 @@ async def register_agent():
 
     agent_address = await agent._get_agent_address()
 
-    # Check if already registered
-    domain_check = await agent._registry_client.check_agent_registration(domain=agent.config.domain)
+    # Check if already registered (ERC-721 based, check by address only)
     address_check = await agent._registry_client.check_agent_registration(agent_address=agent_address)
 
-    if domain_check["registered"] and address_check["registered"]:
-        agent_id = domain_check["agent_id"]
+    if address_check["registered"]:
+        agent_id = address_check["agent_id"]
         agent.agent_id = agent_id
         agent.is_registered = True
         return {

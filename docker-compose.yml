@@ -8,6 +8,7 @@ services:
     environment:
       - GITHUB_REPO=https://github.com/HashWarlock/erc-8004-ex-phala.git
       - GIT_COMMIT_HASH=HEAD
+      - UPDATE_CODE=${UPDATE_CODE:-false}
       - AGENT_DOMAIN=${AGENT_DOMAIN}
       - AGENT_SALT=${AGENT_SALT}
       - SANDBOX_URL=${SANDBOX_URL}
@@ -29,8 +30,8 @@ services:
         apt-get update &&
         apt-get install -y git &&
         mkdir -p /app/.state &&
-        if [ ! -f /app/.state/initialized ]; then
-          echo 'Cloning repository...' &&
+        if [ ! -f /app/.state/initialized ] || [ \"$$UPDATE_CODE\" = \"true\" ]; then
+          echo 'Cloning/updating repository...' &&
           cd /tmp &&
           git clone $$GITHUB_REPO repo &&
           cd repo &&
@@ -39,7 +40,7 @@ services:
           cp -r /tmp/repo/.* /app/ 2>/dev/null || true &&
           rm -rf /tmp/repo &&
           touch /app/.state/initialized &&
-          echo 'Repository initialized';
+          echo 'Repository initialized/updated';
         else
           echo 'Repository already initialized';
         fi &&

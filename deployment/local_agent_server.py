@@ -398,6 +398,28 @@ async def register_tee():
         raise HTTPException(status_code=400, detail="Agent must be registered first")
 
     attestation = await tee_auth.get_attestation()
+
+    # Check if attestation failed
+    if "error" in attestation:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get TEE attestation: {attestation.get('error')}"
+        )
+
+    # Check if TEE is disabled
+    if attestation.get("mode") == "development":
+        raise HTTPException(
+            status_code=400,
+            detail="TEE is disabled. Cannot register without TEE attestation."
+        )
+
+    # Validate required fields
+    if "quote" not in attestation or "event_log" not in attestation:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Invalid attestation structure. Missing required fields. Got: {list(attestation.keys())}"
+        )
+
     agent_address = await agent._get_agent_address()
 
     agent_domain = os.getenv('AGENT_DOMAIN', '')

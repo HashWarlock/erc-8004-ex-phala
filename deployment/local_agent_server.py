@@ -420,8 +420,14 @@ async def register_tee():
     agent_address = await agent._get_agent_address()
 
     agent_domain = os.getenv('AGENT_DOMAIN', '')
-    app_id = agent_domain[:agent_domain.find('-')] # maybe better way
-    dstack_domain = agent_domain[agent_domain.find('.')+1:]
+    print(f"🔍 AGENT_DOMAIN: {agent_domain}")
+
+    app_id = agent_domain[:agent_domain.find('-')] if '-' in agent_domain else agent_domain.split('.')[0]
+    dstack_domain = agent_domain[agent_domain.find('.')+1:] if '.' in agent_domain else ''
+
+    print(f"🔍 app_id: {app_id}")
+    print(f"🔍 dstack_domain: {dstack_domain}")
+
     tdx_quote = attestation['quote']
     event_log = attestation['event_log']
 

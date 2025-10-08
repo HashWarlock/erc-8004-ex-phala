@@ -447,6 +447,44 @@ async def register_tee():
         raise HTTPException(status_code=500, detail=f"TEE registration failed: {str(e)}")
 
 
+@app.post("/api/metadata/update")
+async def update_metadata():
+    """Update on-chain metadata."""
+    if not agent or not agent.is_registered or not agent.agent_id:
+        raise HTTPException(status_code=400, detail="Agent not registered")
+
+    agent_address = await agent._get_agent_address()
+
+    # Verify ownership
+    owner = agent._registry_client.identity_contract.functions.ownerOf(agent.agent_id).call()
+    if owner.lower() != agent_address.lower():
+        raise HTTPException(status_code=403, detail="Not owner")
+
+    # Set metadata
+    metadata_value = f"https://{agent.config.domain}/agent.json".encode()
+
+    tx = agent._registry_client.identity_contract.functions.setMetadata(
+        agent.agent_id,
+        "agent_card_uri",
+        metadata_value
+    ).build_transaction({
+        'chainId': agent._registry_client.chain_id,
+        'gas': 200000,
+        'gasPrice': agent._registry_client.w3.eth.gas_price,
+        'nonce': agent._registry_client.w3.eth.get_transaction_count(agent_address)
+    })
+
+    signed = agent._registry_client.account.sign_transaction(tx)
+    tx_hash = agent._registry_client.w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = agent._registry_client.w3.eth.wait_for_transaction_receipt(tx_hash)
+
+    return {
+        "success": True,
+        "tx_hash": tx_hash.hex(),
+        "agent_id": agent.agent_id
+    }
+
+
 @app.get("/.well-known/agent-card.json")
 @app.get("/a2a/card")
 async def agent_card():

@@ -92,6 +92,27 @@ class RegistryClient:
                 "outputs": [{"name": "count", "type": "uint256"}],
                 "type": "function",
                 "stateMutability": "view"
+            },
+            {
+                "inputs": [
+                    {"name": "agentId", "type": "uint256"},
+                    {"name": "key", "type": "string"},
+                    {"name": "value", "type": "bytes"}
+                ],
+                "name": "setMetadata",
+                "outputs": [],
+                "type": "function",
+                "stateMutability": "nonpayable"
+            },
+            {
+                "inputs": [
+                    {"name": "agentId", "type": "uint256"},
+                    {"name": "key", "type": "string"}
+                ],
+                "name": "getMetadata",
+                "outputs": [{"name": "value", "type": "bytes"}],
+                "type": "function",
+                "stateMutability": "view"
             }
         ]
 
@@ -183,13 +204,19 @@ class RegistryClient:
                 ).call()
 
                 if balance > 0:
-                    # Agent owns at least one NFT - registered
-                    # We assume first token is the agent ID (tokenOfOwnerByIndex would be better)
-                    return {
-                        "registered": True,
-                        "agent_id": 1,  # Placeholder - actual ID lookup requires tokenOfOwnerByIndex
-                        "agent_address": agent_address
-                    }
+                    # Find agent ID by checking totalAgents and ownerOf
+                    total = self.identity_contract.functions.totalAgents().call()
+                    for token_id in range(1, total + 1):
+                        try:
+                            owner = self.identity_contract.functions.ownerOf(token_id).call()
+                            if owner.lower() == agent_address.lower():
+                                return {
+                                    "registered": True,
+                                    "agent_id": token_id,
+                                    "agent_address": agent_address
+                                }
+                        except:
+                            continue
         except Exception as e:
             print(f"⚠️  Registration check: {e}")
 
@@ -241,9 +268,15 @@ class RegistryClient:
         if receipt.status != 1:
             raise RuntimeError(f"Registration failed: tx={tx_hash.hex()}")
 
-        # Get agent ID from logs (Transfer event topic)
-        agent_id = int(receipt['logs'][0]['topics'][3].hex(), 16) if receipt['logs'] else 1
+        # Get agent ID from logs (Transfer event: topics[3] is tokenId)
+        if receipt['logs'] and len(receipt['logs'][0]['topics']) >= 4:
+            agent_id = int(receipt['logs'][0]['topics'][3].hex(), 16)
+        else:
+            # Fallback: check balance and find our token
+            total = self.identity_contract.functions.totalAgents().call()
+            agent_id = total  # Last minted token
 
+        print(f"✅ Registered with Agent ID: {agent_id}")
         return agent_id
 
     async def submit_feedback(

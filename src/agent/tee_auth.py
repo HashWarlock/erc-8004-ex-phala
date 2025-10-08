@@ -109,7 +109,10 @@ class TEEAuthenticator:
             self.account = Account.from_key(key_hex)
             self.address = self.account.address
 
-            print(f"✅ Key derived successfully, address: {self.address}")
+            print(f"✅ Key derived successfully")
+            print(f"   Address: {self.address}")
+            print(f"   Address length: {len(self.address)}")
+            print(f"   Address (no 0x): {self.address.lstrip('0x')} (len: {len(self.address.lstrip('0x'))})")
 
         except Exception as e:
             raise RuntimeError(f"Failed to derive key from TEE: {e}")
@@ -139,9 +142,17 @@ class TEEAuthenticator:
 
         try:
             # Get attestation from TEE using get_quote
-            
+
             import binascii
-            raw_address = binascii.a2b_hex(self.address.lstrip('0x'))
+            # Ensure address is properly formatted (40 hex chars after 0x)
+            address_hex = self.address.lstrip('0x')
+
+            # Pad with leading zero if odd length
+            if len(address_hex) % 2 != 0:
+                address_hex = '0' + address_hex
+
+            print(f"🔍 Converting address to bytes: {address_hex} (length: {len(address_hex)})")
+            raw_address = binascii.a2b_hex(address_hex)
             application_data = self._create_attestation_data(raw_address)
             quote_result = self.tee_client.get_quote(application_data)
 

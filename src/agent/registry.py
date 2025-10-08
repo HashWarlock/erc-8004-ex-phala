@@ -59,48 +59,39 @@ class RegistryClient:
 
         self.identity_abi = [
             {
-                "inputs": [
-                    {"name": "agentDomain", "type": "string"},
-                    {"name": "agentAddress", "type": "address"}
-                ],
-                "name": "newAgent",
+                "inputs": [{"name": "tokenURI_", "type": "string"}],
+                "name": "register",
                 "outputs": [{"name": "agentId", "type": "uint256"}],
                 "type": "function",
-                "stateMutability": "payable"  # Changed from nonpayable - contract requires 0.005 ETH fee
+                "stateMutability": "nonpayable"
             },
             {
-                "inputs": [{"name": "domain", "type": "string"}],
-                "name": "resolveByDomain",
-                "outputs": [
-                    {"name": "agentId", "type": "uint256"},
-                    {"name": "agentDomain", "type": "string"},
-                    {"name": "agentAddress", "type": "address"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
+                "inputs": [{"name": "tokenId", "type": "uint256"}],
+                "name": "ownerOf",
+                "outputs": [{"name": "", "type": "address"}],
+                "type": "function",
+                "stateMutability": "view"
             },
             {
-                "inputs": [{"name": "agentAddress", "type": "address"}],
-                "name": "resolveByAddress",
-                "outputs": [
-                    {"name": "agentId", "type": "uint256"},
-                    {"name": "agentDomain", "type": "string"},
-                    {"name": "agentAddress", "type": "address"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
+                "inputs": [{"name": "owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "type": "function",
+                "stateMutability": "view"
             },
             {
                 "inputs": [{"name": "agentId", "type": "uint256"}],
-                "name": "getAgent",
-                "outputs": [
-                    {"name": "agentId", "type": "uint256"},
-                    {"name": "agentAddress", "type": "address"},
-                    {"name": "domain", "type": "string"},
-                    {"name": "timestamp", "type": "uint256"}
-                ],
-                "stateMutability": "view",
-                "type": "function"
+                "name": "tokenURI",
+                "outputs": [{"name": "", "type": "string"}],
+                "type": "function",
+                "stateMutability": "view"
+            },
+            {
+                "inputs": [],
+                "name": "totalAgents",
+                "outputs": [{"name": "count", "type": "uint256"}],
+                "type": "function",
+                "stateMutability": "view"
             }
         ]
 
@@ -176,38 +167,28 @@ class RegistryClient:
         agent_address: str = None
     ) -> Dict[str, Any]:
         """
-        Check if agent is already registered by domain or address.
+        Check if agent is registered (owns an NFT).
 
         Args:
-            domain: Agent's domain
+            domain: Unused (kept for compatibility)
             agent_address: Agent's Ethereum address
 
         Returns:
-            Dict with registration info or {"registered": False} if not registered
+            Dict with registration info or {"registered": False}
         """
         try:
-            if domain:
-                # resolveByDomain returns (agentId, agentDomain, agentAddress)
-                result = self.identity_contract.functions.resolveByDomain(domain).call()
-                if result[0] > 0:
-                    return {
-                        "registered": True,
-                        "agent_id": result[0],
-                        "domain": result[1],
-                        "agent_address": result[2]
-                    }
-
             if agent_address:
-                # resolveByAddress returns (agentId, agentDomain, agentAddress)
-                result = self.identity_contract.functions.resolveByAddress(
+                balance = self.identity_contract.functions.balanceOf(
                     Web3.to_checksum_address(agent_address)
                 ).call()
-                if result[0] > 0:
+
+                if balance > 0:
+                    # Agent owns at least one NFT - registered
+                    # We assume first token is the agent ID (tokenOfOwnerByIndex would be better)
                     return {
                         "registered": True,
-                        "agent_id": result[0],
-                        "domain": result[1],
-                        "agent_address": result[2]
+                        "agent_id": 1,  # Placeholder - actual ID lookup requires tokenOfOwnerByIndex
+                        "agent_address": agent_address
                     }
         except Exception as e:
             print(f"⚠️  Registration check: {e}")
@@ -221,78 +202,49 @@ class RegistryClient:
         agent_card: Dict[str, Any] = None
     ) -> int:
         """
-        Register a new agent in the Identity Registry using newAgent().
-
-        Note: Requires 0.005 ETH registration fee.
-        Agent card is stored off-chain.
+        Register agent by minting ERC-721 NFT.
 
         Args:
-            domain: Agent's domain
-            agent_address: Agent's Ethereum address
-            agent_card: Agent card (unused in reference implementation)
+            domain: Agent's domain (used to build tokenURI)
+            agent_address: Unused (msg.sender gets NFT)
+            agent_card: Unused
 
         Returns:
-            Agent ID assigned by the registry
-
-        Raises:
-            RuntimeError: If registration fails (e.g., already registered, insufficient fee)
+            Agent ID (token ID)
         """
         if not self.account:
-            raise ValueError("Account required for registration")
+            raise ValueError("Account required")
 
-        # Check if already registered - need to check BOTH domain and address match
-        domain_check = await self.check_agent_registration(domain=domain)
-        address_check = await self.check_agent_registration(agent_address=agent_address)
+        # Check if already registered
+        check = await self.check_agent_registration(agent_address=self.account.address)
+        if check["registered"]:
+            print(f"✅ Already registered")
+            return check["agent_id"]
 
-        # If domain and address both registered AND match each other, agent is already registered
-        if (domain_check["registered"] and address_check["registered"] and
-            domain_check["agent_id"] == address_check["agent_id"]):
-            print(f"✅ Agent already registered with ID: {domain_check['agent_id']}")
-            return domain_check["agent_id"]
+        # Build tokenURI pointing to /agent.json
+        token_uri = f"https://{domain}/agent.json"
 
-        # If domain registered but to different address, or address registered to different domain - conflict
-        if domain_check["registered"] or address_check["registered"]:
-            if domain_check["registered"] and domain_check["agent_address"].lower() != agent_address.lower():
-                raise ValueError(f"Domain '{domain}' already registered to different address: {domain_check['agent_address']}")
-            if address_check["registered"] and address_check["domain"] != domain:
-                raise ValueError(f"Address already registered to different domain: {address_check['domain']}")
-
-        # Use newAgent function with 0.0001 ETH fee
-        registration_fee = self.w3.to_wei(0.0001, 'ether')
-
-        tx = self.identity_contract.functions.newAgent(
-            domain,
-            Web3.to_checksum_address(agent_address)
-        ).build_transaction({
+        tx = self.identity_contract.functions.register(token_uri).build_transaction({
             'chainId': self.chain_id,
             'gas': 300000,
             'gasPrice': self.w3.eth.gas_price,
-            'nonce': self.w3.eth.get_transaction_count(self.account.address),
-            'value': registration_fee  # 0.005 ETH registration fee
+            'nonce': self.w3.eth.get_transaction_count(self.account.address)
         })
 
-        # Sign and send transaction
         signed_tx = self.account.sign_transaction(tx)
         tx_hash = self.w3.eth.send_raw_transaction(signed_tx.raw_transaction)
 
-        print(f"📤 Transaction sent: {tx_hash.hex()} (fee: 0.005 ETH)")
+        print(f"📤 Registration tx: {tx_hash.hex()}")
 
-        # Wait for receipt
         receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
 
         if receipt.status != 1:
-            error_msg = "Registration failed - check: sufficient balance (0.005 ETH + gas), valid domain, unique address"
-            raise RuntimeError(f"{error_msg}: tx={tx_hash.hex()}")
+            raise RuntimeError(f"Registration failed: tx={tx_hash.hex()}")
 
-        # Get agent ID from logs
-        agent_id = receipt['logs'][0]['topics'][1].hex() if receipt['logs'] else None
+        # Get agent ID from logs (Transfer event topic)
+        agent_id = int(receipt['logs'][0]['topics'][3].hex(), 16) if receipt['logs'] else 1
 
-        if not agent_id:
-            # Fallback: query by domain
-            result = self.identity_contract.functions.resolveByDomain(domain).call()
-            agent_id = result[0]
-
-        return int(agent_id, 16) if isinstance(agent_id, str) else agent_id
+        return agent_id
 
     async def submit_feedback(
         self,

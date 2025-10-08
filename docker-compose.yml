@@ -18,7 +18,7 @@ services:
       - TEE_REGISTRY_ADDRESS=${TEE_REGISTRY_ADDRESS}
       - TEE_VERIFIER_ADDRESS=${TEE_VERIFIER_ADDRESS}
       - AGENT_HOST=${AGENT_HOST:-0.0.0.0}
-      - AGENT_PORT=${AGENT_PORT:-8000}
+      - AGENT_PORT=${AGENT_PORT:-80}
     volumes:
       - app_data:/app
       - /var/run/dstack.sock:/var/run/dstack.sock

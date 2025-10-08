@@ -72,10 +72,19 @@ class TEEVerifier:
             'appId': app_id,
             'dstackDomain': dstack_domain,
         }
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post('https://194622febfc33d67e4a98f365dbc2fe9d0d53933-3000.dstack-pha-prod9.phala.network/getOffchainProof', json=payload)
-            resp.raise_for_status()
-            data = resp.json()
+
+        print(f"📤 Requesting offchain proof with payload: {payload}")
+
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post('https://194622febfc33d67e4a98f365dbc2fe9d0d53933-3000.dstack-pha-prod9.phala.network/getOffchainProof', json=payload)
+                print(f"📥 Offchain proof response status: {resp.status_code}")
+                print(f"📥 Offchain proof response: {resp.text[:500]}")
+                resp.raise_for_status()
+                data = resp.json()
+        except Exception as e:
+            print(f"❌ Offchain proof request failed: {str(e)}")
+            raise RuntimeError(f"Failed to get offchain proof: {str(e)}")
 
         tee_arch = Web3.to_bytes(text="TDX_DSTACK").ljust(32, b'\x00')
         code_measurement = data['codeMeasurement']

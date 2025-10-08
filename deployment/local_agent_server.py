@@ -348,8 +348,25 @@ async def register_agent():
     if not agent or not tee_auth:
         raise HTTPException(status_code=503, detail="Agent not initialized")
 
-    # Check balance
     agent_address = await agent._get_agent_address()
+
+    # Check if already registered
+    domain_check = await agent._registry_client.check_agent_registration(domain=agent.config.domain)
+    address_check = await agent._registry_client.check_agent_registration(agent_address=agent_address)
+
+    if domain_check["registered"] and address_check["registered"] and domain_check["agent_id"] == address_check["agent_id"]:
+        agent_id = domain_check["agent_id"]
+        agent.agent_id = agent_id
+        agent.is_registered = True
+        return {
+            "success": True,
+            "agent_id": agent_id,
+            "already_registered": True,
+            "domain": agent.config.domain,
+            "address": agent_address
+        }
+
+    # Check balance
     balance_wei = agent._registry_client.w3.eth.get_balance(agent_address)
     balance_eth = float(agent._registry_client.w3.from_wei(balance_wei, 'ether'))
 
@@ -380,10 +397,7 @@ async def register_agent():
     except Exception as e:
         error_msg = str(e).lower()
 
-        # Parse error to provide user-friendly message
-        if "already registered" in error_msg or "domain" in error_msg:
-            detail = f"Domain '{agent.config.domain[:50]}...' is already registered. Please use a different domain or agent address."
-        elif "insufficient" in error_msg or "balance" in error_msg:
+        if "insufficient" in error_msg or "balance" in error_msg:
             detail = f"Insufficient balance. Need at least 0.006 ETH (0.005 registration fee + gas). Current: {balance_eth:.4f} ETH"
         else:
             detail = f"Registration failed: {str(e)}"

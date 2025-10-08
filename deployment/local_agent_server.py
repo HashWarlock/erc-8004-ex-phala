@@ -354,7 +354,7 @@ async def register_agent():
     domain_check = await agent._registry_client.check_agent_registration(domain=agent.config.domain)
     address_check = await agent._registry_client.check_agent_registration(agent_address=agent_address)
 
-    if domain_check["registered"] and address_check["registered"] and domain_check["agent_id"] == address_check["agent_id"]:
+    if domain_check["registered"] and address_check["registered"]:
         agent_id = domain_check["agent_id"]
         agent.agent_id = agent_id
         agent.is_registered = True
@@ -371,38 +371,21 @@ async def register_agent():
     balance_eth = float(agent._registry_client.w3.from_wei(balance_wei, 'ether'))
 
     if balance_eth < 0.001:
-        raise HTTPException(status_code=400, detail="Insufficient balance for registration")
+        raise HTTPException(status_code=400, detail="Insufficient balance")
 
+    # Try to register
     try:
-        # Register agent
-        agent_id = await agent._registry_client.register_agent(
-            domain=agent.config.domain,
-            agent_address=agent_address
-        )
-
+        agent_id = await agent._registry_client.register_agent(agent.config.domain, agent_address)
         agent.agent_id = agent_id
         agent.is_registered = True
-
-        # Get tx from logs (simplified)
-        tx_hash = "0x" + "0" * 64  # Placeholder
-
         return {
             "success": True,
             "agent_id": agent_id,
-            "tx_hash": tx_hash,
             "domain": agent.config.domain,
-            "address": agent_address,
-            "explorer_url": f"https://sepolia.basescan.org/tx/{tx_hash}"
+            "address": agent_address
         }
     except Exception as e:
-        error_msg = str(e).lower()
-
-        if "insufficient" in error_msg or "balance" in error_msg:
-            detail = f"Insufficient balance. Need at least 0.006 ETH (0.005 registration fee + gas). Current: {balance_eth:.4f} ETH"
-        else:
-            detail = f"Registration failed: {str(e)}"
-
-        raise HTTPException(status_code=400, detail=detail)
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/api/tee/register")

@@ -1,0 +1,44 @@
+{
+  "name": "TEE Agent",
+  "description": "Trustless AI agent with Intel TDX attestation",
+  "image": "",
+  "supportedTrust": [
+    "tee-attestation"
+  ],
+  "endpoints": {
+    "a2a": {
+      "enabled": true,
+      "version": "0.3.0"
+    },
+    "mcp": {
+      "enabled": false,
+      "endpoint": "",
+      "capabilities": {},
+      "version": "2025-06-18"
+    },
+    "oasf": {
+      "enabled": false,
+      "endpoint": "",
+      "version": "0.7"
+    },
+    "ens": {
+      "enabled": false,
+      "endpoint": "",
+      "version": "v1"
+    },
+    "did": {
+      "enabled": false,
+      "endpoint": "",
+      "version": "v1"
+    }
+  },
+  "evmChains": [
+    {"name": "Ethereum", "chainId": 1},
+    {"name": "Optimism", "chainId": 10},
+    {"name": "Base", "chainId": 8453},
+    {"name": "Base-Sepolia", "chainId": 84532},
+    {"name": "Arbitrum", "chainId": 42161},
+    {"name": "Polygon", "chainId": 137},
+    {"name": "Ethereum-Sepolia", "chainId": 11155111}
+  ]
+}

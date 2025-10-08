@@ -396,3 +396,97 @@ def create_ai_agent_card(
     )
 
     return builder.build()
+
+
+def build_erc8004_registration(
+    domain: str,
+    agent_address: str,
+    agent_id: Optional[int],
+    identity_registry: str,
+    chain_id: int = 84532,
+    config_path: str = "agent_config.json"
+) -> Dict[str, Any]:
+    """
+    Build ERC-8004 registration JSON from config file.
+
+    Spec: https://eips.ethereum.org/EIPS/eip-8004#registration-v1
+    """
+    import json
+    import os
+
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Config not found: {config_path}")
+
+    with open(config_path) as f:
+        cfg = json.load(f)
+
+    endpoints = []
+
+    # A2A
+    if cfg["endpoints"]["a2a"]["enabled"]:
+        endpoints.append({
+            "name": "A2A",
+            "endpoint": f"https://{domain}/.well-known/agent-card.json",
+            "version": cfg["endpoints"]["a2a"]["version"]
+        })
+
+    # MCP
+    if cfg["endpoints"]["mcp"]["enabled"]:
+        ep = {
+            "name": "MCP",
+            "endpoint": cfg["endpoints"]["mcp"]["endpoint"],
+            "version": cfg["endpoints"]["mcp"]["version"]
+        }
+        if cfg["endpoints"]["mcp"]["capabilities"]:
+            ep["capabilities"] = cfg["endpoints"]["mcp"]["capabilities"]
+        endpoints.append(ep)
+
+    # OASF
+    if cfg["endpoints"]["oasf"]["enabled"]:
+        endpoints.append({
+            "name": "OASF",
+            "endpoint": cfg["endpoints"]["oasf"]["endpoint"],
+            "version": cfg["endpoints"]["oasf"]["version"]
+        })
+
+    # ENS
+    if cfg["endpoints"]["ens"]["enabled"]:
+        endpoints.append({
+            "name": "ENS",
+            "endpoint": cfg["endpoints"]["ens"]["endpoint"],
+            "version": cfg["endpoints"]["ens"]["version"]
+        })
+
+    # DID
+    if cfg["endpoints"]["did"]["enabled"]:
+        endpoints.append({
+            "name": "DID",
+            "endpoint": cfg["endpoints"]["did"]["endpoint"],
+            "version": cfg["endpoints"]["did"]["version"]
+        })
+
+    # EVM wallets
+    for chain in cfg["evmChains"]:
+        endpoints.append({
+            "name": f"agentWallet-{chain['name']}",
+            "endpoint": f"eip155:{chain['chainId']}:{agent_address}"
+        })
+
+    card = {
+        "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+        "name": cfg["name"],
+        "description": cfg["description"],
+        "endpoints": endpoints,
+        "supportedTrust": cfg["supportedTrust"]
+    }
+
+    if cfg.get("image"):
+        card["image"] = cfg["image"]
+
+    if agent_id is not None:
+        card["registrations"] = [{
+            "agentId": agent_id,
+            "agentRegistry": f"eip155:{chain_id}:{identity_registry}"
+        }]
+
+    return card

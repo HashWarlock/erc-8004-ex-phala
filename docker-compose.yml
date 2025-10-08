@@ -2,17 +2,50 @@ version: '3.8'
 
 services:
   agent:
-    build: .
-    ports:
-      - "8000:8000"
+    image: ubuntu:22.04
+    platform: linux/amd64
+    container_name: erc8004-agent
     environment:
+      - GITHUB_REPO=https://github.com/HashWarlock/erc-8004-ex-phala.git
+      - GIT_COMMIT_HASH=HEAD
       - AGENT_DOMAIN=${AGENT_DOMAIN}
       - AGENT_SALT=${AGENT_SALT}
       - SANDBOX_URL=${SANDBOX_URL}
       - RPC_URL=${RPC_URL:-https://sepolia.base.org}
       - CHAIN_ID=${CHAIN_ID:-84532}
       - IDENTITY_REGISTRY_ADDRESS=${IDENTITY_REGISTRY_ADDRESS}
+      - TEE_REGISTRY_ADDRESS=${TEE_REGISTRY_ADDRESS}
       - TEE_VERIFIER_ADDRESS=${TEE_VERIFIER_ADDRESS}
+      - AGENT_HOST=${AGENT_HOST:-0.0.0.0}
+      - AGENT_PORT=${AGENT_PORT:-8000}
     volumes:
+      - app_data:/app
       - /var/run/dstack.sock:/var/run/dstack.sock
+    ports:
+      - "8000:8000"
     restart: unless-stopped
+    command: >
+      bash -c "
+        apt-get update &&
+        apt-get install -y git &&
+        mkdir -p /app/.state &&
+        if [ ! -f /app/.state/initialized ]; then
+          echo 'Cloning repository...' &&
+          cd /tmp &&
+          git clone $$GITHUB_REPO repo &&
+          cd repo &&
+          git checkout $$GIT_COMMIT_HASH &&
+          cp -r /tmp/repo/* /app/ &&
+          cp -r /tmp/repo/.* /app/ 2>/dev/null || true &&
+          rm -rf /tmp/repo &&
+          touch /app/.state/initialized &&
+          echo 'Repository initialized';
+        else
+          echo 'Repository already initialized';
+        fi &&
+        cd /app &&
+        exec bash /app/entrypoint.sh
+      "
+
+volumes:
+  app_data:

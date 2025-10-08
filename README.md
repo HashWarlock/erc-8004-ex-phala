@@ -1,61 +1,44 @@
 # ERC-8004 TEE Agent
 
-Trustless agents with Intel TDX on Base Sepolia. 0.0001 ETH registration fee.
+Trustless AI agents with Intel TDX attestation on Base Sepolia.
 
 ## Features
 
 - 🔐 TEE-derived keys (Intel TDX via Phala dstack)
-- 🌐 ERC-8004 compliant agent cards
-- 📜 TEE attestation (mock signatures for testing)
+- 🌐 ERC-8004 registration-v1 compliant (`/agent.json`)
+- 📜 Real TEE attestation
 - 🔗 On-chain registration (0.0001 ETH)
-- 🤖 A2A protocol (POST /tasks, GET /tasks/{id})
-- 🏖️ AIO Sandbox integration
+- 🤖 A2A protocol support
+- 🔧 Config-driven endpoint management
 
 ## Quick Start
 
-### Using Docker (Recommended)
-
 ```bash
 git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
 cd erc-8004-ex-phala
 cp .env.example .env
-# Edit .env with your config
+# Edit .env and agent_config.json
 docker compose up -d
 ```
 
-### Manual Setup
-
-```bash
-git clone https://github.com/HashWarlock/erc-8004-ex-phala.git
-cd erc-8004-ex-phala
-pip install -e .
-cp .env.example .env
-# Edit .env with your config
-python deployment/local_agent_server.py
-```
-
 Open http://localhost:8000
-
-**See [QUICKSTART.md](QUICKSTART.md) for details**
 
 ## Project Structure
 
 ```
 erc-8004-ex-phala/
-├── contracts/             # Solidity contracts
-│   ├── IdentityRegistry.sol (deployed: 0x8506e13d47faa2DC8c5a0dD49182e74A6131a0e3)
-│   └── TEERegistry.sol
-├── src/agent/            # Core agent logic
-│   ├── tee_auth.py      # TEE key derivation
-│   ├── tee_verifier.py  # TEE registration
-│   └── registry.py      # On-chain registry client
-├── src/templates/        # Agent templates
-│   └── server_agent.py  # AIO Sandbox agent
-├── deployment/           # Server
-│   └── local_agent_server.py
-└── static/              # Web UI
-    ├── dashboard.html   # Registration flow
-    └── funding.html     # QR code funding
+├── agent_config.json          # Agent metadata & endpoints
+├── entrypoint.sh              # Docker entrypoint
+├── docker-compose.yml         # Deployment config
+├── contracts/                 # Solidity contracts
+├── src/agent/                 # Core logic
+│   ├── tee_auth.py           # TEE key derivation
+│   ├── tee_verifier.py       # TEE registration
+│   ├── agent_card.py         # ERC-8004 builders
+│   └── registry.py           # On-chain client
+├── deployment/
+│   └── local_agent_server.py # FastAPI server
+└── static/                    # Web UI
 ```
 
 ## Architecture
@@ -80,15 +63,13 @@ erc-8004-ex-phala/
 
 ## API Endpoints
 
-- `GET /` - Funding page
-- `GET /dashboard` - Registration flow
-- `GET /api/status` - Agent status (checks on-chain)
-- `GET /api/wallet` - Wallet address & balance
-- `POST /api/register` - Register agent (0.0001 ETH)
+- `GET /agent.json` - ERC-8004 registration-v1 format
+- `GET /.well-known/agent-card.json` - A2A agent card
+- `GET /api/status` - Agent status
+- `POST /api/register` - Register on-chain
 - `POST /api/tee/register` - Register TEE key
-- `GET /.well-known/agent-card.json` - ERC-8004 agent card
-- `POST /tasks` - Create A2A task
-- `GET /tasks/{id}` - Query task status
+- `POST /tasks` - A2A task submission
+- `GET /tasks/{id}` - Task status
 
 ## Deployed Contracts
 
@@ -99,61 +80,76 @@ erc-8004-ex-phala/
 
 ## Configuration
 
-See `.env.example`:
-
+**`.env`** - Runtime config:
 ```bash
-AGENT_DOMAIN=localhost:8000
+AGENT_DOMAIN=your-domain.com
 AGENT_SALT=unique-salt
 IDENTITY_REGISTRY_ADDRESS=0x8506e13d47faa2DC8c5a0dD49182e74A6131a0e3
 TEE_REGISTRY_ADDRESS=0x03eCA4d903Adc96440328C2E3a18B71EB0AFa60D
 ```
 
-## Documentation
+**`agent_config.json`** - Agent metadata:
+```json
+{
+  "name": "Your Agent",
+  "description": "Agent description",
+  "endpoints": {
+    "a2a": {"enabled": true},
+    "mcp": {"enabled": false, "endpoint": ""},
+    "ens": {"enabled": false, "endpoint": ""}
+  },
+  "evmChains": [
+    {"name": "Base", "chainId": 8453}
+  ],
+  "supportedTrust": ["tee-attestation"]
+}
+```
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 3 min
-- **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** - Architecture
-- **[STAKEHOLDER_DEMO.md](STAKEHOLDER_DEMO.md)** - EF presentation
-- **[contracts/](contracts/)** - Smart contracts
-- **[src/agent/](src/agent/)** - Core code
+## Customization
+
+Edit `agent_config.json` to add endpoints:
+
+**Add MCP:**
+```json
+"mcp": {
+  "enabled": true,
+  "endpoint": "https://mcp.agent.eth/",
+  "version": "2025-06-18"
+}
+```
+
+**Add chains:**
+```json
+{"name": "Polygon", "chainId": 137}
+```
+
+**Add trust models:**
+```json
+"supportedTrust": ["tee-attestation", "reputation"]
+```
 
 ## How It Works
 
-1. **Generate Wallet** - TEE derives keys from domain+salt
-2. **Fund** - Add 0.0001 ETH to agent address
-3. **Register** - Call Identity Registry `newAgent()`
-4. **Verify TEE** - Submit attestation to TEE Registry
-5. **Go Live** - A2A endpoints ready
-
-**Trust Model**: Hardware-backed cryptographic proof via Intel TDX attestation
+1. TEE derives keys from `domain+salt`
+2. Fund wallet (0.0001 ETH)
+3. Register on-chain
+4. Submit TEE attestation
+5. Agent live at `/agent.json`
 
 ## Tech Stack
 
-- **TEE**: Intel TDX (Phala dstack)
-- **Chain**: Base Sepolia
-- **Backend**: Python/FastAPI
-- **Contracts**: Solidity ^0.8.20
-- **Frontend**: HTML/Tailwind
-
-## Development
-
-```bash
-# Run server
-python deployment/local_agent_server.py
-
-# Test
-pytest tests/
-
-# Deploy contracts
-./scripts/deploy_contracts.sh
-```
+- Intel TDX (Phala dstack)
+- Base Sepolia
+- Python/FastAPI
+- Solidity ^0.8.20
 
 ## ERC-8004 Compliance
 
-✅ Agent Cards
-✅ Identity Registry
-✅ TEE Registry
-✅ A2A Protocol
-✅ Attestation Verification
+✅ `/agent.json` (registration-v1)
+✅ CAIP-10 wallet addresses
+✅ A2A endpoints
+✅ TEE attestation
+✅ On-chain registry
 
 ## License
 

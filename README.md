@@ -4,30 +4,69 @@
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository demonstrates the complete lifecycle of autonomous commerce, powered by ChaosChain's SDK that provides revolutionary Triple-Verified Stack: **Google AP2 Intent Verification** + **ChaosChain Process Integrity** + **ChaosChain Adjudication**. See AI agents establish on-chain identity via ERC-8004, perform verifiable work with cryptographic execution proofs, receive dual-protocol payments (AP2 + A2A-x402), and create monetizable IP assets.
+This repository demonstrates the complete lifecycle of autonomous commerce, powered by ChaosChain's SDK that provides revolutionary Triple-Verified Stack: **Google AP2 Intent Verification** + **ChaosChain Process Integrity** + **ChaosChain Adjudication**. See AI agents establish on-chain identity via ERC-8004, perform verifiable work with cryptographic execution proofs, and handle crypto payments (x402 USDC on Base/Ethereum or direct A0GI transfers on 0G).
 
-This repository demonstrates how to build sophisticated AI agent workflows/marketplaces (Studios) using the [ChaosChain SDK](https://pypi.org/project/chaoschain-sdk/). Genesis Studio showcases a complete multi-agent system where AI agents perform smart shopping analysis, validate results, and handle payments using x402 crypto payments - all with optional storage solutions and no vendor lock-in.
+Genesis Studio showcases a complete multi-agent system where AI agents perform smart shopping analysis, validate results, and handle crypto payments - all with pluggable storage, compute providers, and no vendor lock-in.
 
 ## Quick Start with ChaosChain SDK
 
-```bash
-# Install the ChaosChain SDK
-pip install chaoschain-sdk
+### Installation
 
+**Basic Installation** (ERC-8004 v1.0 + x402 + Local IPFS):
+```bash
+pip install chaoschain-sdk
+```
+
+**With Optional Providers**:
+
+Storage Providers:
+```bash
+pip install chaoschain-sdk[0g-storage]  # 0G Storage (decentralized)
+pip install chaoschain-sdk[pinata]      # Pinata (cloud IPFS)
+pip install chaoschain-sdk[irys]        # Irys (Arweave permanent)
+pip install chaoschain-sdk[storage-all] # All storage providers
+```
+
+Compute Providers:
+```bash
+pip install chaoschain-sdk[0g-compute]  # 0G Compute (TEE-verified AI)
+pip install chaoschain-sdk[compute-all] # All compute providers
+```
+
+Full Stacks:
+```bash
+pip install chaoschain-sdk[0g]          # 0G Full Stack (Storage + Compute)
+pip install chaoschain-sdk[all]         # Everything (all providers)
+```
+
+Development:
+```bash
+pip install chaoschain-sdk[dev]         # With dev tools (pytest, black, mypy)
+```
+
+Google AP2 (optional, for intent verification):
+```bash
+pip install git+https://github.com/google-agentic-commerce/AP2.git@main
+```
+
+### Run Genesis Studio Demo
+
+```bash
 # Clone this example implementation
 git clone https://github.com/ChaosChain/chaoschain-genesis-studio.git
 cd chaoschain-genesis-studio
 
-# Run the Genesis Studio demo
+# Run the demo
 python genesis_studio.py
 ```
 
 **What you'll see:**
-- ✅ **Multi-Agent Creation**: Server, Validator, and Client agents working together
-- ✅ **x402 Crypto Payments**: Native cryptocurrency payments using Coinbase's x402 protocol
-- ✅ **Process Integrity**: Verifiable AI agent execution with cryptographic proofs
-- ✅ **Optional Storage**: Works with Pinata, local IPFS, or completely vendor-free
-- ✅ **ERC-8004 Integration**: On-chain identity and reputation management
+- ✅ **ERC-8004 v1.0**: On-chain identity, reputation, and validation registries (pre-deployed)
+- ✅ **Triple-Verified Stack**: AP2 Intent + Process Integrity + Adjudication/Accountability
+- ✅ **Multi-Agent System**: Server (Alice), Validator (Bob), and Client (Charlie) agents
+- ✅ **Crypto Payments**: A0GI direct transfers (0G) or USDC with x402 (Base/Ethereum)
+- ✅ **Verifiable Compute**: Optional 0G Compute for TEE-verified AI inference
+- ✅ **Pluggable Storage**: IPFS, Pinata, Irys, or 0G Storage (your choice)
 
 ## Table of Contents
 
@@ -45,11 +84,12 @@ python genesis_studio.py
 
 Genesis Studio is a **comprehensive example implementation** that demonstrates the full capabilities of the ChaosChain SDK. It showcases how to build production-ready AI agent systems with:
 
+- **ERC-8004 v1.0 Standard**: Complete implementation of on-chain identity, reputation, and validation registries
+- **Triple-Verified Stack**: Google AP2 Intent + ChaosChain Process Integrity + ChaosChain Adjudication
 - **Multi-Agent Orchestration**: Server agents, validator agents, and client agents working together
-- **Crypto Payments**: Native x402 payments using Coinbase's official protocol
-- **Process Integrity**: Verifiable execution with cryptographic proofs
-- **Flexible Storage**: Optional storage with Pinata, local IPFS, or vendor-free operation
-- **On-Chain Identity**: ERC-8004 identity and reputation management
+- **Crypto Payments**: Direct token transfers (A0GI on 0G Testnet) or x402 protocol (USDC on Base/Ethereum)
+- **Verifiable Compute**: Optional 0G Compute for TEE-verified AI inference with hardware attestations
+- **Pluggable Architecture**: Choose your storage (IPFS/Pinata/Irys/0G) and compute (local/0G) providers
 
 ### The Vision: Triple-Verified Stack for Trustless AI Commerce
 
@@ -164,8 +204,14 @@ graph TD
 ### Step 1: Install the ChaosChain SDK
 
 ```bash
-# Install from PyPI
+# Basic installation (ERC-8004 + x402 + Local IPFS)
 pip install chaoschain-sdk
+
+# Or with 0G integration (Storage + Compute)
+pip install chaoschain-sdk[0g]
+
+# Or everything (all providers)
+pip install chaoschain-sdk[all]
 ```
 
 ### Step 2: Clone Genesis Studio Example
@@ -220,33 +266,53 @@ print(f'✅ SDK working! Agent wallet: {agent.wallet_address}')
 
 The ChaosChain SDK provides everything you need to build production-ready AI agents:
 
+### ERC-8004 v1.0 Standard (Pre-Deployed)
+- **Identity Registry**: On-chain agent registration with ERC-721 NFTs
+- **Reputation Registry**: Feedback and reputation scores with on-chain composability
+- **Validation Registry**: Independent validation with stake-secured verification
+- **Zero Setup**: Contracts pre-deployed on Base Sepolia, Ethereum Sepolia, Optimism Sepolia, 0G Galileo
+
+### Triple-Verified Stack
+1. **Layer 1 - Google AP2 Intent**: "Did human authorize?" - RSA256 JWT signed mandates
+2. **Layer 2 - Process Integrity**: "Was code executed right?" - Local code hashing + optional TEE attestations
+3. **Layer 3 - Adjudication/Accountability**: "Was outcome valuable?" - ERC-8004 validation registry
+
+**ChaosChain owns 2 out of 3 layers!**
+
 ### Multi-Agent Support
 - **Server Agents**: Provide services and execute tasks
 - **Validator Agents**: Assess and validate work quality  
 - **Client Agents**: Request services and make payments
 - **Automatic Wallet Management**: Each agent gets a unique wallet
 
-### Native x402 Payments
-- **Coinbase x402 Protocol**: Official implementation for crypto payments
-- **Multi-Payment Support**: 5 different payment methods available
-- **Automatic Fee Collection**: Built-in treasury fee management
+### Crypto Payments
+
+**Payment Methods by Network:**
+
+| Network | Payment Method | Token | Protocol Used |
+|---------|---------------|-------|---------------|
+| **0G Galileo Testnet** | Direct transfers | A0GI (native) | web3.py direct |
+| **Base/Ethereum/Optimism** | x402 Protocol | USDC (ERC20) | Coinbase x402 |
+
+**About x402**: The [x402 protocol](https://github.com/coinbase/x402) is Coinbase's HTTP-based payment request/verification protocol. It's currently used for USDC payments on supported EVM chains (Base, Ethereum, Optimism). For 0G Testnet, which uses native A0GI tokens, the SDK performs direct wallet-to-wallet transfers instead.
+
+**Features:**
+- **Automatic Fee Collection**: Built-in treasury fee management (2.5%)
 - **Payment Receipts**: Cryptographic proof of all transactions
+- **Multi-Network**: Works across different blockchain networks with appropriate payment methods
 
-### Process Integrity
-- **Verifiable Execution**: Cryptographic proofs of correct code execution
-- **Code Hash Verification**: Ensure agents run the intended code
-- **Evidence Storage**: Permanent storage of execution proofs
+### Verifiable Compute (Optional)
+- **0G Compute**: TEE-verified AI inference with hardware attestations
+- **Local Execution**: Process integrity with code hashing (always available)
+- **Dual-Layer Proofs**: Combines local code verification + TEE attestations
+- **Graceful Fallback**: Works without TEE providers
 
-### Flexible Storage Options
-- **Pinata Integration**: Cloud IPFS storage for enhanced features
-- **Local IPFS**: Run your own IPFS node for full control
-- **Vendor-Free Mode**: Works without any external storage services
-- **Graceful Fallbacks**: Clear messaging when storage is unavailable
-
-### ERC-8004 Integration
-- **On-Chain Identity**: Register agents on blockchain
-- **Reputation System**: Build trust through verified work
-- **Validation Registry**: Quality assessment and scoring
+### Pluggable Storage
+- **Local IPFS**: Free, self-hosted (just run `ipfs daemon`)
+- **Pinata**: Cloud IPFS with reliability guarantees
+- **Irys**: Permanent storage on Arweave
+- **0G Storage**: Decentralized storage with Merkle proofs (via gRPC sidecar)
+- **Vendor-Free Mode**: Works without any external storage
 
 ##  SDK Usage Examples
 
@@ -347,11 +413,14 @@ python genesis_studio.py
 
 The demo will:
 1. **Create three AI agents** (Alice, Bob, Charlie) using the ChaosChain SDK
-2. **Register them on-chain** using ERC-8004 identity registry
-3. **Execute a smart shopping workflow** with process integrity
-4. **Handle x402 crypto payments** between agents
-5. **Validate results** and build reputation scores
-6. **Store evidence** (with optional IPFS integration)
+2. **Register them on-chain** using ERC-8004 v1.0 identity registry (pre-deployed)
+3. **Execute Triple-Verified Stack workflow**:
+   - Google AP2 Intent Verification (user authorization)
+   - ChaosChain Process Integrity (code verification + optional 0G Compute TEE)
+   - ChaosChain Adjudication/Accountability (ERC-8004 validation registry)
+4. **Handle crypto payments**: Direct A0GI transfers on 0G Testnet (or x402 USDC on Base)
+5. **Validate results** via ERC-8004 validation registry and build reputation scores
+6. **Store evidence** on 0G Storage (or fallback to IPFS/Pinata)
 
 ### Option 2: Vendor-Free Demo
 
@@ -377,14 +446,28 @@ The demo showcases a complete AI agent workflow:
 
 ```
 🚀 ChaosChain Agent SDK initialized for Alice (server)
-🚀 ChaosChain Agent SDK initialized for Bob (validator)  
+   Network: 0g-testnet | Wallet: 0x1234... | AI Model: 0G Compute (TEE verified)
+🚀 ChaosChain Agent SDK initialized for Bob (validator)
+   Network: 0g-testnet | Wallet: 0x5678... | AI Model: 0G Compute (TEE verified)
 🚀 ChaosChain Agent SDK initialized for Charlie (client)
+   Network: 0g-testnet | Wallet: 0x9abc...
 
-✅ Smart shopping analysis completed
-💳 x402 payment processed: 1.7 USDC
-🔍 Validation completed: 97/100 score
-📦 Evidence stored on IPFS (or in-memory if vendor-free)
+✅ Triple-Verified Stack Complete:
+   ✅ Layer 1: AP2 Intent Verification (Google)
+   ✅ Layer 2: Process Integrity (ChaosChain + 0G Compute TEE)
+   ✅ Layer 3: Adjudication/Accountability (ChaosChain ERC-8004)
+
+✅ Smart shopping analysis completed with TEE verification
+💳 Direct A0GI payment: 0.00005 A0GI (Charlie → Alice)
+   TX: 0x1234... | Explorer: https://chainscan-galileo.0g.ai/tx/0x1234...
+🔍 Validation completed: 95/100 score
+💳 Validation payment: 0.00005 A0GI (Charlie → Bob)
+📦 Evidence stored on 0G Storage (or fallback to IPFS if unavailable)
 ```
+
+**Note**: Output varies by network:
+- **0G Testnet**: Direct A0GI transfers (as shown above)
+- **Base/Ethereum**: x402 protocol with USDC payments
 
 ### Funding Wallets (Optional)
 
@@ -404,6 +487,54 @@ for name in agents:
 # Fund each address with Base Sepolia ETH from:
 # https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet
 ```
+
+### Optional: 0G Network Integration
+
+Genesis Studio supports the [0G Network](https://0g.ai) for decentralized storage and TEE-verified compute as an optional enhancement:
+
+#### 0G Features
+- **Decentralized Storage**: Merkle tree proofs, permanent data availability via gRPC sidecar
+- **TEE-Verified Compute**: Hardware-attested AI inference (0G Compute with real TEE)
+- **Native A0GI Payments**: Direct token transfers on 0G Galileo Testnet (not x402)
+- **ERC-8004 Contracts**: Pre-deployed identity, reputation, and validation registries
+
+#### Prerequisites
+```bash
+# Install 0G providers (if not already installed)
+pip install chaoschain-sdk[0g]  # Includes 0g-storage and 0g-compute
+```
+
+#### Setting Up 0G Integration
+
+**1. Start the 0G gRPC Sidecar** (for Storage + Compute):
+```bash
+cd sdk/sidecar-specs/typescript-server
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your 0G private key and RPC URLs:
+#   ZEROG_PRIVATE_KEY=your_private_key
+#   ZEROG_EVM_RPC=https://evmrpc-testnet.0g.ai
+#   ZEROG_INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
+
+# Start the gRPC server
+npm start  # Runs on localhost:50051
+```
+
+**2. Run Genesis Studio** (in another terminal):
+```bash
+cd ../../../
+python3 genesis_studio.py
+```
+
+The SDK will automatically detect the 0G sidecar and use it for storage and compute. If the sidecar is not available, Genesis Studio falls back to IPFS/Pinata and local execution.
+
+**Documentation**: 
+- Full setup: [sdk/sidecar-specs/typescript-server/README.md](sdk/sidecar-specs/typescript-server/README.md)
+- SDK integration: [sdk/README.md](sdk/README.md)
 
 ## Architecture
 
@@ -508,9 +639,11 @@ The demo script executes a complete, four-phase Triple-Verified Stack workflow:
 ### Phase 2: Triple-Verified Stack Execution
 -   **Google AP2 Intent Verification:** Charlie creates cryptographic mandates using Google's official AP2 library with RSA256 JWT signing for smart shopping with specific constraints (green winter jacket, 20% premium tolerance).
 -   **ChaosChain Process Integrity:** Alice performs smart shopping with verifiable execution, generating cryptographic proofs of code integrity and correct execution.
--   **A2A-x402 Dual Payment System:** Charlie authorizes payment via **Google AP2** ($2.0 USDC) and settles via **A2A-x402 extension** (1.7 USDC) with automatic protocol fee collection (2.5% to ChaosChain treasury).
+-   **Crypto Payments:** Charlie makes payments using network-appropriate methods:
+    - **0G Testnet**: Direct A0GI token transfers (web3.py)
+    - **Base/Ethereum**: x402 protocol with USDC and automatic fee collection (2.5% to treasury)
 -   **ChaosChain Adjudication:** Bob validates the shopping results using ERC-8004 ValidationRegistry, assessing quality against smart shopping criteria.
--   **Enhanced Evidence Packages** are created containing Google AP2 JWT proofs, process integrity proofs, A2A-x402 payment receipts, and validation results.
+-   **Enhanced Evidence Packages** are created containing Google AP2 JWT proofs, process integrity proofs, payment receipts, and validation results.
 
 ### Phase 3: Complete Verification Stack
 -   All three verification layers are combined into a **Triple-Verified Proof Package**.
@@ -857,11 +990,20 @@ ChaosChain's revolutionary **Triple-Verified Stack** combines three verification
 - **Multi-Network Support**: Base Sepolia, Base Mainnet, Ethereum, Polygon
 - **Environment Variables**: Secure API key management with environment substitution
 
-#### A2A-x402 Dual Payment System
+#### Multi-Network Payment System
+**For Base/Ethereum/Optimism (x402 Protocol)**:
 - **Google AP2 Authorization**: User intent verification and payment authorization ($2.0 USDC) with JWT tokens
-- **A2A-x402 Settlement**: Crypto settlement per Google's specification (1.7 USDC net, 2.5% to treasury)
+- **x402 Settlement**: Crypto settlement with USDC (1.7 USDC net, 2.5% to treasury)
 - **Automatic Fee Collection**: Protocol fees collected transparently to ChaosChain treasury
+
+**For 0G Testnet (Direct Transfers)**:
+- **Direct A0GI Transfers**: Native token transfers via web3.py
+- **Google AP2 Authorization**: Optional intent verification (JWT tokens)
+- **No x402 Protocol**: Direct wallet-to-wallet transfers
+
+**Universal Features**:
 - **Complete Audit Trail**: Payment receipts with cryptographic proofs integrated into evidence packages
+- **Multi-Network Support**: Automatic detection of network and appropriate payment method
 
 ### Revenue Model
 - **Protocol Fees**: 2.5% of all x402 settlements go to ChaosChain treasury

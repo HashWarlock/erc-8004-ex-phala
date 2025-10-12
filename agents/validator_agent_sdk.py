@@ -489,10 +489,10 @@ class GenesisValidatorAgentSDK:
         rprint(f"[blue]   Network: {network.value}[/blue]")
         if self.zerog_inference and self.zerog_inference.is_real_0g:
             rprint(f"[blue]   AI Model: 0G gpt-oss-120b (TEE verified)[/blue]")
-        elif self.zerog_inference:
-            rprint(f"[blue]   AI Model: 0G gpt-oss-120b (mock fallback)[/blue]")
         else:
-            rprint(f"[blue]   AI Model: CrewAI tools[/blue]")
+            # Note: genesis_studio.py uses separate zg_compute (gRPC) for real 0G Compute
+            # This agent uses CrewAI for local validation when called as fallback
+            rprint(f"[blue]   AI Model: CrewAI (local processing)[/blue]")
     
     def _setup_crewai_agent(self):
         """Setup the CrewAI agent for validation"""

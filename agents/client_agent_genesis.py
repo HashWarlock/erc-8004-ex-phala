@@ -13,7 +13,8 @@ from rich import print as rprint
 
 # Import ChaosChain SDK components
 try:
-    from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
+    from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig
+    from chaoschain_sdk.types import AgentRole
     SDK_AVAILABLE = True
 except ImportError:
     SDK_AVAILABLE = False

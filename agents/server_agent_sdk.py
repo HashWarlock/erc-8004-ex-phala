@@ -16,7 +16,8 @@ from rich import print as rprint
 
 # Import ChaosChain SDK components
 try:
-    from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig, AgentRole
+    from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig
+    from chaoschain_sdk.types import AgentRole
     SDK_AVAILABLE = True
 except ImportError:
     SDK_AVAILABLE = False
@@ -115,13 +116,14 @@ class GenesisShoppingAnalysisTool(BaseTool):
         return json.dumps(analysis, indent=2)
 
 class GenesisServerAgentSDK:
-    """Enhanced Server Agent for Genesis Studio using ChaosChain SDK + CrewAI"""
+    """Enhanced Server Agent for Genesis Studio using ChaosChain SDK + CrewAI + 0G Compute"""
     
     def __init__(self, agent_name: str, agent_domain: str, agent_role: AgentRole = AgentRole.SERVER,
                  network: NetworkConfig = NetworkConfig.BASE_SEPOLIA,
-                 enable_ap2: bool = True, enable_process_integrity: bool = True):
+                 enable_ap2: bool = True, enable_process_integrity: bool = True,
+                 use_0g_inference: bool = True):
         """
-        Initialize the Genesis Server Agent with ChaosChain SDK and CrewAI
+        Initialize the Genesis Server Agent with ChaosChain SDK, CrewAI, and 0G Compute
         
         Args:
             agent_name: Name of the agent (e.g., "Alice")
@@ -130,6 +132,7 @@ class GenesisServerAgentSDK:
             network: Blockchain network to use
             enable_ap2: Enable AP2 integration for intent verification
             enable_process_integrity: Enable process integrity verification
+            use_0g_inference: Use 0G Compute for AI inference (TEE verified)
         """
         if not SDK_AVAILABLE:
             raise ImportError("ChaosChain SDK is required for GenesisServerAgentSDK")
@@ -138,6 +141,7 @@ class GenesisServerAgentSDK:
         self.agent_domain = agent_domain
         self.agent_role = agent_role
         self.network = network
+        self.use_0g_inference = use_0g_inference
         
         # Initialize ChaosChain SDK with AP2 and Process Integrity
         self.sdk = ChaosChainAgentSDK(
@@ -149,16 +153,33 @@ class GenesisServerAgentSDK:
             enable_process_integrity=enable_process_integrity
         )
         
+        # Initialize 0G Inference Provider (TEE verified AI)
+        self.zerog_inference = None
+        if use_0g_inference:
+            try:
+                from chaoschain_sdk.providers.compute import create_0g_inference
+                self.zerog_inference = create_0g_inference(model="gpt-oss-120b")
+                rprint("[green]🤖 0G Compute inference enabled (TEE verified)[/green]")
+            except Exception as e:
+                rprint(f"[yellow]⚠️  0G inference unavailable: {e}[/yellow]")
+                rprint("[cyan]   Falling back to CrewAI analysis tools[/cyan]")
+        
         # Initialize CrewAI components
         self._setup_crewai_agent()
         
         # Store service history
         self.service_history = []
         
-        rprint(f"[green]🤖 Genesis Server Agent ({agent_name}) initialized with SDK + CrewAI[/green]")
+        rprint(f"[green]🤖 Genesis Server Agent ({agent_name}) initialized with SDK + CrewAI + 0G[/green]")
         rprint(f"[blue]   Domain: {agent_domain}[/blue]")
         rprint(f"[blue]   Wallet: {self.sdk.wallet_address}[/blue]")
         rprint(f"[blue]   Network: {network.value}[/blue]")
+        if self.zerog_inference and self.zerog_inference.is_real_0g:
+            rprint(f"[blue]   AI Model: 0G gpt-oss-120b (TEE verified)[/blue]")
+        elif self.zerog_inference:
+            rprint(f"[blue]   AI Model: 0G gpt-oss-120b (mock fallback)[/blue]")
+        else:
+            rprint(f"[blue]   AI Model: CrewAI tools[/blue]")
     
     def _setup_crewai_agent(self):
         """Setup the CrewAI agent for shopping analysis"""
@@ -205,6 +226,10 @@ class GenesisServerAgentSDK:
         """
         
         rprint(f"[yellow]🛒 Generating CrewAI smart shopping analysis for {item_type}...[/yellow]")
+        
+        # If 0G inference is available, use it for AI-powered analysis
+        if self.zerog_inference:
+            return self._generate_analysis_with_0g(item_type, color, budget, premium_tolerance)
         
         # Register the shopping function for process integrity
         def smart_shopping_with_crewai(item_type: str, color: str, budget: float, premium_tolerance: float) -> Dict[str, Any]:
@@ -347,6 +372,124 @@ class GenesisServerAgentSDK:
             
         except Exception as e:
             rprint(f"[red]❌ Analysis with process integrity failed: {e}[/red]")
+            raise
+    
+    def _generate_analysis_with_0g(self, item_type: str, color: str, budget: float, 
+                                   premium_tolerance: float) -> Dict[str, Any]:
+        """
+        Generate shopping analysis using 0G Compute Network (TEE verified AI)
+        
+        This uses the gpt-oss-120b model on 0G's decentralized compute network
+        with TEE verification for process integrity.
+        """
+        rprint(f"[cyan]🤖 Using 0G gpt-oss-120b for shopping analysis...[/cyan]")
+        
+        # Build the prompt for 0G LLM
+        prompt = f"""You are an expert shopping analyst. Analyze the following shopping request and provide a detailed recommendation:
+
+Product Request:
+- Item Type: {item_type}
+- Preferred Color: {color}
+- Budget: ${budget}
+- Premium Tolerance: {premium_tolerance*100}% for preferred options
+
+Provide a comprehensive analysis in JSON format with the following structure:
+{{
+  "item_type": "{item_type}",
+  "requested_color": "{color}",
+  "available_color": "<recommended color>",
+  "base_price": <price without premium>,
+  "final_price": <final recommended price>,
+  "premium_applied": <percentage premium if color match found>,
+  "deal_quality": "<excellent|good|alternative>",
+  "color_match_found": <true|false>,
+  "merchant": "<recommended merchant name>",
+  "availability": "in_stock",
+  "estimated_delivery": "<delivery estimate>",
+  "auto_purchase_eligible": <true|false>,
+  "confidence": <0.0-1.0>,
+  "reasoning": "<detailed explanation of recommendation>"
+}}
+
+Ensure prices are within budget and apply premiums only if color match is found."""
+
+        try:
+            # Call 0G Compute Network
+            response_text, tee_proof = self.zerog_inference.chat_completion(
+                messages=[
+                    {"role": "system", "content": "You are an expert shopping analyst providing detailed product recommendations."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            # Parse the AI response
+            try:
+                analysis_data = json.loads(response_text)
+            except json.JSONDecodeError:
+                # Fallback if AI doesn't return valid JSON
+                rprint("[yellow]⚠️  AI response wasn't valid JSON, using fallback...[/yellow]")
+                analysis_data = {
+                    "item_type": item_type,
+                    "requested_color": color,
+                    "available_color": color,
+                    "base_price": budget * 0.75,
+                    "final_price": budget * 0.85,
+                    "premium_applied": 0,
+                    "deal_quality": "good",
+                    "color_match_found": True,
+                    "merchant": "0G AI Recommended Merchant",
+                    "availability": "in_stock",
+                    "estimated_delivery": "2-3 business days",
+                    "auto_purchase_eligible": True,
+                    "confidence": 0.85,
+                    "reasoning": response_text[:200] if response_text else "Analysis completed"
+                }
+            
+            # Add 0G metadata
+            analysis_data.update({
+                "analysis_timestamp": datetime.now().isoformat(),
+                "shopping_agent": f"{self.agent_name} (0G gpt-oss-120b)",
+                "zerog_compute": {
+                    "model": "gpt-oss-120b",
+                    "provider": self.zerog_inference.config.provider_address,
+                    "verification": self.zerog_inference.verification_method,
+                    "tee_proof": tee_proof,
+                    "is_real_0g": self.zerog_inference.is_real_0g
+                },
+                "genesis_studio": {
+                    "agent_id": self.sdk.get_agent_id() if hasattr(self.sdk, 'get_agent_id') else None,
+                    "agent_domain": self.agent_domain,
+                    "version": "1.0.0-0g",
+                    "process_integrity": True if tee_proof and tee_proof.get("is_valid") else False
+                }
+            })
+            
+            # Store in service history
+            self.service_history.append({
+                "service": "smart_shopping_analysis",
+                "item_type": item_type,
+                "color": color,
+                "budget": budget,
+                "result": analysis_data,
+                "tee_proof": tee_proof,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            rprint(f"[green]✅ 0G AI shopping analysis completed for {item_type}[/green]")
+            confidence = analysis_data.get("confidence", 0.85)
+            rprint(f"[blue]   Confidence Score: {confidence*100:.1f}%[/blue]")
+            if tee_proof and tee_proof.get("is_valid"):
+                rprint(f"[green]   TEE Verification: ✅ PASSED[/green]")
+            
+            return {
+                "analysis": analysis_data,
+                "process_integrity_proof": tee_proof
+            }
+            
+        except Exception as e:
+            rprint(f"[red]❌ 0G AI analysis failed: {e}[/red]")
             raise
     
     def store_analysis_evidence(self, analysis_data: Dict[str, Any], filename_prefix: str = "analysis") -> str:

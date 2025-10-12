@@ -218,3 +218,9 @@ MULTI_PAYMENT_INTEGRATION_SUMMARY.md
 clean_pypi_env/
 fresh_test_env/
 production_test_env/
+
+*.md
+!README.md
+
+ERC-v1
+sdk/

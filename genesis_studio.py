@@ -13,6 +13,133 @@ with x402 payment integration:
 
 Usage:
     python genesis_studio.py
+
+=== PLUGGABLE PROVIDER ARCHITECTURE DEMO ===
+
+The ChaosChain SDK now supports pluggable storage and compute providers.
+This demonstrates how developers can inject custom providers like 0G Storage/Compute:
+
+Example 1: Using 0G Storage via gRPC Sidecar Bridge
+```python
+from chaoschain_sdk import ChaosChainAgentSDK, ZeroGStorageGRPC
+
+# Initialize 0G Storage provider via gRPC sidecar
+zg_storage = ZeroGStorageGRPC(
+    grpc_url="localhost:50051",  # 0G bridge gRPC endpoint
+    api_key="your-0g-api-key"
+)
+
+# Inject into SDK
+agent = ChaosChainAgentSDK(
+    agent_name="MyAgent",
+    agent_domain="myagent.example.com",
+    agent_role="server",
+    network="0g-testnet",
+    storage_provider=zg_storage  # ✅ Custom provider injected
+)
+
+# SDK will now use 0G Storage for all evidence packages
+result = zg_storage.put(
+    evidence_bytes,
+    tags={"task": "audit"},
+    idempotency_key="request-123"
+)
+print(f"Stored on 0G: {result.uri}")  # 0g://object/abc123
+```
+
+Example 2: Using 0G Compute via gRPC Sidecar Bridge
+```python
+from chaoschain_sdk import ChaosChainAgentSDK, ZeroGComputeGRPC, ProviderVerificationMethod
+
+# Initialize 0G Compute provider via gRPC sidecar
+zg_compute = ZeroGComputeGRPC(
+    grpc_url="localhost:50052",  # 0G compute gRPC endpoint
+    api_key="your-0g-api-key"
+)
+
+# Inject into SDK
+agent = ChaosChainAgentSDK(
+    agent_name="MyAgent",
+    agent_domain="myagent.example.com",
+    agent_role="server",
+    network="0g-testnet",
+    compute_provider=zg_compute  # ✅ Custom compute provider injected
+)
+
+# Submit verifiable compute task
+job_id = zg_compute.submit(
+    task={"model": "llama2", "prompt": "Analyze market data"},
+    verification=ProviderVerificationMethod.TEE_ML
+)
+
+# Wait for completion and get results
+result = zg_compute.wait_for_completion(job_id)
+print(f"Output: {result.output}")
+print(f"Proof: {result.proof}")  # TEE attestation
+```
+
+Example 3: Default Behavior (Auto-detection)
+```python
+# Without provider injection, SDK auto-detects available storage:
+# Pinata (if PINATA_JWT set) → Local IPFS → Memory fallback
+agent = ChaosChainAgentSDK(
+    agent_name="MyAgent",
+    agent_domain="myagent.example.com",
+    agent_role="server",
+    network="base-sepolia"
+    # No provider injection - uses auto-detected storage
+)
+```
+
+Example 4: ERC-8004 v1.0 Feedback with Payment Proof
+```python
+from chaoschain_sdk import ChaosChainAgentSDK
+from chaoschain_sdk.types import PaymentProof
+
+# Execute payment (x402)
+payment_proof = sdk.x402_manager.execute_agent_payment(
+    from_agent="Alice",
+    to_agent="Bob",
+    amount_usdc=10.0,
+    service_description="Data analysis task"
+)
+
+# Generate feedback authorization
+feedback_auth = sdk.chaos_agent.generate_feedback_authorization(
+    agent_id=server_agent_id,
+    client_address=client_wallet_address,
+    index_limit=1,
+    expiry=int(time.time()) + 3600
+)
+
+# Create ERC-8004 v1.0 compliant feedback with payment proof
+# This automatically:
+# 1. Formats feedback JSON per ERC-8004 v1.0 spec
+# 2. Includes payment proof (fromAddress, toAddress, chainId, txHash)
+# 3. Uploads to IPFS/0G Storage
+# 4. Returns (URI, hash) ready for on-chain submission
+uri, hash = sdk.chaos_agent.create_feedback_with_payment(
+    agent_id=server_agent_id,
+    score=100,
+    feedback_auth=feedback_auth,
+    payment_proof=payment_proof,  # ✅ Automatically ERC-8004 v1.0 compliant!
+    skill="data-analysis",
+    task="market-research",
+    tag1="quality",
+    tag2="speed"
+)
+
+# Submit feedback to on-chain reputation registry
+tx_hash = sdk.chaos_agent.give_feedback(
+    agent_id=server_agent_id,
+    score=100,
+    feedback_auth=feedback_auth,
+    file_uri=uri,  # URI with payment proof included
+    file_hash=hash
+)
+
+print(f"✅ Feedback with payment proof submitted: {tx_hash}")
+```
 """
 
 import os
@@ -28,7 +155,8 @@ from rich import print as rprint
 from rich.panel import Panel
 from rich.align import Align
 from rich.table import Table
-from chaoschain_sdk import ChaosChainAgentSDK, AgentRole, NetworkConfig
+from chaoschain_sdk import ChaosChainAgentSDK, NetworkConfig
+from chaoschain_sdk.types import AgentRole
 
 # Import CrewAI-powered agents
 from agents.server_agent_sdk import GenesisServerAgentSDK
@@ -187,16 +315,25 @@ class GenesisStudioX402Orchestrator:
     
     def _validate_configuration(self):
         """Validate all required environment variables including x402"""
-        # Core required variables (Pinata is now optional!)
-        required_vars = [
-            "NETWORK", "BASE_SEPOLIA_RPC_URL", "BASE_SEPOLIA_PRIVATE_KEY",
-            "CDP_API_KEY_ID", "CDP_API_KEY_SECRET", "CDP_WALLET_SECRET",
-            "USDC_CONTRACT_ADDRESS"
-        ]
+        network = os.getenv("NETWORK", "base-sepolia")
+        
+        # Core required variables (network-specific)
+        if network == "0g-testnet":
+            required_vars = [
+                "NETWORK", "ZEROG_TESTNET_RPC_URL", "ZEROG_TESTNET_PRIVATE_KEY"
+            ]
+        elif network == "base-sepolia":
+            required_vars = [
+                "NETWORK", "BASE_SEPOLIA_RPC_URL", "BASE_SEPOLIA_PRIVATE_KEY"
+            ]
+        else:
+            required_vars = ["NETWORK"]
         
         # Optional variables (for enhanced features)
         optional_vars = [
-            "PINATA_JWT", "PINATA_GATEWAY"
+            "PINATA_JWT", "PINATA_GATEWAY", 
+            "CDP_API_KEY_ID", "CDP_API_KEY_SECRET", "CDP_WALLET_SECRET",
+            "USDC_CONTRACT_ADDRESS"
         ]
         
         missing_vars = []
@@ -218,9 +355,9 @@ class GenesisStudioX402Orchestrator:
             rprint("[yellow]   Storage will use local IPFS fallback (free option)[/yellow]")
             rprint("[yellow]   To enable Pinata: set PINATA_JWT and PINATA_GATEWAY[/yellow]")
         
-        # Validate network is set to base-sepolia
-        if os.getenv("NETWORK") != "base-sepolia":
-            rprint("[yellow]⚠️  Network is not set to 'base-sepolia'. This demo is designed for Base Sepolia.[/yellow]")
+        # Validate network is set to 0g-testnet
+        if os.getenv("NETWORK") != "0g-testnet":
+            rprint("[yellow]⚠️  Network is not set to '0g-testnet'. This demo is designed for 0G Testnet.[/yellow]")
     
     def _initialize_agent_sdks(self):
         """Initialize CrewAI-powered agents with ChaosChain SDK integration"""
@@ -228,29 +365,44 @@ class GenesisStudioX402Orchestrator:
         # Create CrewAI-powered agents with ChaosChain SDK integration
         rprint("[yellow]🤖 Initializing CrewAI-powered agents with ChaosChain SDK...[/yellow]")
         
+        # Initialize 0G providers for storage and compute
+        try:
+            from chaoschain_sdk.providers.storage import ZeroGStorageGRPC
+            from chaoschain_sdk.providers.compute import ZeroGComputeGRPC
+            zg_storage = ZeroGStorageGRPC(grpc_url="localhost:50051")
+            zg_compute = ZeroGComputeGRPC(grpc_url="localhost:50052")
+            rprint("[green]✅ 0G gRPC providers initialized[/green]")
+        except Exception as e:
+            rprint(f"[yellow]⚠️  0G gRPC providers not available: {e}[/yellow]")
+            rprint("[yellow]   Storage will fallback to IPFS, compute will use local[/yellow]")
+            zg_storage = None
+            zg_compute = None
+        
         self.alice_agent = GenesisServerAgentSDK(
             agent_name="Alice",
             agent_domain="alice.chaoschain-studio.com",
             agent_role=AgentRole.SERVER,
-            network=NetworkConfig.BASE_SEPOLIA,
+            network=NetworkConfig.BASE_SEPOLIA,  # Using Base Sepolia
             enable_ap2=True,
-            enable_process_integrity=True
+            enable_process_integrity=True,
+            use_0g_inference=True  # ✅ 0G Compute AI inference
         )
         
         self.bob_agent = GenesisValidatorAgentSDK(
             agent_name="Bob",
             agent_domain="bob.chaoschain-studio.com",
             agent_role=AgentRole.VALIDATOR,
-            network=NetworkConfig.BASE_SEPOLIA,
+            network=NetworkConfig.BASE_SEPOLIA,  # Using Base Sepolia
             enable_ap2=True,
-            enable_process_integrity=True
+            enable_process_integrity=True,
+            use_0g_inference=True  # ✅ 0G Compute AI validation
         )
         
         self.charlie_agent = GenesisClientAgent(
             agent_name="Charlie",
             agent_domain="charlie.chaoschain-studio.com",
             agent_role=AgentRole.CLIENT,
-            network=NetworkConfig.BASE_SEPOLIA,
+            network=NetworkConfig.BASE_SEPOLIA,  # Using Base Sepolia
             enable_ap2=True,
             enable_process_integrity=False  # Client doesn't need process integrity
         )
@@ -280,25 +432,25 @@ class GenesisStudioX402Orchestrator:
         }
     
     def _fund_agent_wallets(self):
-        """Fund all agent wallets from Base Sepolia faucet"""
+        """Fund all agent wallets from 0G Testnet faucet"""
         
         agents = [("Alice", self.alice_sdk), ("Bob", self.bob_sdk), ("Charlie", self.charlie_sdk)]
         funded_agents = []
         
-        print("💰 Checking wallet balances...")
+        print("💰 Checking wallet balances on 0G Testnet...")
         for agent_name, sdk in agents:
             balance = sdk.wallet_manager.get_wallet_balance(agent_name)
             address = sdk.wallet_manager.get_wallet_address(agent_name)
-            print(f"   {agent_name}: {balance:.4f} ETH ({address})")
+            print(f"   {agent_name}: {balance:.4f} A0GI ({address})")
             
-            if balance > 0.001:  # Has some ETH for gas
+            if balance > 0.001:  # Has some A0GI for gas
                 funded_agents.append(agent_name)
             else:
-                print(f"   ⚠️  {agent_name} needs funding. Please send ETH to {address}")
+                print(f"   ⚠️  {agent_name} needs funding. Please send A0GI to {address}")
         
         if len(funded_agents) == 0:
-            print("🔗 Fund your wallets at: https://www.alchemy.com/faucets/base-sepolia")
-            print("   Each wallet needs ~0.01 ETH for gas fees")
+            print("🔗 Fund your wallets at: https://faucet.0g.ai/")
+            print("   Each wallet needs ~0.1 A0GI for gas fees")
         
         self.results["funding"] = {
             "success": len(funded_agents) > 0,
@@ -772,7 +924,7 @@ class GenesisStudioX402Orchestrator:
             "analysis_confidence": 87,  # From the analysis
             "triple_verified_stack": {
                 "ap2_intent_verification": self.results.get("ap2_intent", {}).get("verified", False),
-                "process_integrity_proof_id": self.results.get("process_integrity_proof", {}).proof_id if self.results.get("process_integrity_proof") else None,
+                "process_integrity_proof_id": self.results.get("process_integrity_proof", {}).get("proof_id") if self.results.get("process_integrity_proof") else None,
                 "chaoschain_adjudication": "completed",
                 "verification_layers_completed": 3
             }

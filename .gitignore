@@ -223,3 +223,6 @@ MULTI_PAYMENT_INTEGRATION_SUMMARY.md
 clean_pypi_env/
 fresh_test_env/
 production_test_env/
+
+# SDK is maintained in separate repo for PyPI publishing
+sdk/
